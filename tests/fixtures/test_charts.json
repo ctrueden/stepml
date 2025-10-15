@@ -1,0 +1,34 @@
+{
+  "_comment": "Representative StepMania charts for regression testing",
+  "_instructions": "Add relative paths from Songs/ directory. These charts should cover various edge cases and format variations.",
+  "charts": [
+    {
+      "name": "Simple BPM, No Stops",
+      "path": "Goofy Goober Rock/Goofy Goober Rock.sm",
+      "description": "Simple chart with constant BPM, no timing gimmicks",
+      "edge_cases": ["basic_timing", "simple_patterns"]
+    },
+    {
+      "name": "High Speed Chart",
+      "path": "StepMania 5/Goin' Under/Goin' Under.sm",
+      "description": "High BPM (210) with multiple difficulties, modern format",
+      "edge_cases": ["high_bpm", "multiple_difficulties", "modern_format"]
+    },
+    {
+      "name": "BPM Changes",
+      "path": "Pokemon Heartgold Soulsilver/Pokemon Heartgold Soulsilver.sm",
+      "description": "Chart with BPM variations and jump patterns",
+      "edge_cases": ["bpm_changes", "jump_patterns"]
+    }
+  ],
+  "edge_cases_to_add": [
+    "stops_freezes - Charts with stop segments",
+    "holds_rolls - Heavy hold/roll note usage",
+    "mines - Charts with mine notes",
+    "doubles - Double/couple chart types",
+    "low_rating - Beginner/Easy charts",
+    "high_rating - Challenge/Expert charts",
+    "ssc_format - StepMania 5 .ssc format",
+    "dwi_format - Legacy .dwi format"
+  ]
+}
