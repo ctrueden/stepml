@@ -3,32 +3,59 @@
   "_instructions": "Add relative paths from Songs/ directory. These charts should cover various edge cases and format variations.",
   "charts": [
     {
-      "name": "Simple BPM, No Stops",
-      "path": "Goofy Goober Rock/Goofy Goober Rock.sm",
-      "description": "Simple chart with constant BPM, no timing gimmicks",
-      "edge_cases": ["basic_timing", "simple_patterns"]
-    },
-    {
       "name": "High Speed Chart",
       "path": "StepMania 5/Goin' Under/Goin' Under.sm",
       "description": "High BPM (210) with multiple difficulties, modern format",
-      "edge_cases": ["high_bpm", "multiple_difficulties", "modern_format"]
+      "edge_cases": ["high_bpm", "multiple_difficulties", "modern_format", "low_rating", "high_rating"]
     },
     {
-      "name": "BPM Changes",
-      "path": "Pokemon Heartgold Soulsilver/Pokemon Heartgold Soulsilver.sm",
-      "description": "Chart with BPM variations and jump patterns",
-      "edge_cases": ["bpm_changes", "jump_patterns"]
+      "name": "Complex BPM Changes",
+      "path": "DDR A3/Continue to the real world/Continue to the real world.sm",
+      "description": "Multiple BPM transitions (93-186) with stops/freezes and double charts",
+      "edge_cases": ["bpm_changes", "stops", "multiple_difficulties", "doubles"]
+    },
+    {
+      "name": "Extreme BPM Variations",
+      "path": "DDR 2013/Monkey Business/Monkey Business.sm",
+      "description": "15 BPM changes ranging 80-160 BPM with 6 stops - most complex timing",
+      "edge_cases": ["bpm_changes", "stops", "extreme_timing"]
+    },
+    {
+      "name": "Widest BPM Range",
+      "path": "DDR 2013/Elemental Creation/Elemental Creation.sm",
+      "description": "Extreme BPM range 106-424 BPM - stress test for BPM handling",
+      "edge_cases": ["bpm_changes", "extreme_bpm", "high_bpm"]
+    },
+    {
+      "name": "Heavy Stops",
+      "path": "DDR 2013/STULTI/STULTI.sm",
+      "description": "9 freeze points with BPM drop to 90 - stop/freeze handling",
+      "edge_cases": ["stops", "bpm_changes", "freezes"]
+    },
+    {
+      "name": "Extreme Low BPM",
+      "path": "DDR 2013/Magnetic/Magnetic.sm",
+      "description": "BPM drops to 40 - extreme low BPM handling",
+      "edge_cases": ["bpm_changes", "extreme_bpm", "low_bpm"]
+    },
+    {
+      "name": "Steady High BPM with Stops",
+      "path": "DDR 2013/Another Phase/Another Phase.sm",
+      "description": "Stable 160 BPM with significant freeze durations",
+      "edge_cases": ["stops", "freezes", "multiple_difficulties"]
+    },
+    {
+      "name": "Simple Baseline",
+      "path": "[Originals] Teddy/Goofy Goober Rock/Goofy Goober Rock.sm",
+      "description": "Simple chart with constant BPM, no timing gimmicks - baseline reference",
+      "edge_cases": ["basic_timing", "simple_patterns"]
     }
   ],
-  "edge_cases_to_add": [
-    "stops_freezes - Charts with stop segments",
-    "holds_rolls - Heavy hold/roll note usage",
-    "mines - Charts with mine notes",
-    "doubles - Double/couple chart types",
-    "low_rating - Beginner/Easy charts",
-    "high_rating - Challenge/Expert charts",
-    "ssc_format - StepMania 5 .ssc format",
-    "dwi_format - Legacy .dwi format"
-  ]
+  "coverage_summary": {
+    "bpm_ranges_tested": ["40-160 (extreme low)", "80-160 (variable)", "93-186 (moderate)", "106-424 (extreme wide)", "160 (stable)", "210 (high)"],
+    "timing_features": ["simple/no changes", "multiple BPM changes", "stops/freezes", "extreme variations"],
+    "difficulty_ranges": ["1-11 (Goin' Under)", "3-16 (Continue to the real world)"],
+    "chart_types": ["dance-single", "dance-double"],
+    "packs_represented": ["DDR 2013", "DDR A3", "StepMania 5", "[Originals]"]
+  }
 }
