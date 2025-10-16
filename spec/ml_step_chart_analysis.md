@@ -288,23 +288,52 @@ class ScaleAwareDataset:
    - Categorize by detected series/scale
    - Generate confidence metrics for each classification
 
-#### Phase 2: Baseline Model Development
-1. **Simple Models**: Linear regression, Random Forest
-2. **Feature Selection**: Identify most predictive features
-3. **Validation Framework**: K-fold cross-validation
-4. **Performance Metrics**: MAE, RMSE, ranking correlation
+#### Phase 2: Player Performance Integration & Scale Detection
+1. **Player Stats Parser**: Extract performance data from `Stats.xml`
+   - Parse per-chart performance metrics (times played, grades, accuracy)
+   - Extract global skill indicators (meter distribution, play count patterns)
+   - Build performance database for chart validation
 
-#### Phase 3: Advanced Model Training
+2. **Performance-Based Features**: Augment chart features with empirical difficulty
+   - `perceived_difficulty`: Based on player performance vs. rating
+   - `sight_read_difficulty`: Adjusting for familiarity (times played)
+   - `consistency_score`: Grade variance across attempts
+   - `difficulty_delta`: Stated rating minus perceived difficulty
+
+3. **Ground Truth Validation**: Use 25 years of performance data
+   - Charts with high grades + many plays → Correctly rated for skill level
+   - Charts with low grades despite many plays → Potentially underrated or skill gaps
+   - Charts rarely played → Outside comfort zone (too easy/hard)
+   - Gallop/triplet course performance → Pattern-specific skill indicators
+
+4. **Scale Detection with Performance Validation**:
+   - Implement songpack series detection
+   - Validate detected scales against performance patterns
+   - Use player stats to identify rating creep (e.g., ITG charts feeling harder than rating suggests)
+   - Build confidence scores incorporating both metadata and performance
+
+5. **Training Data Enrichment**:
+   - Mark charts with sufficient play history as high-confidence labels
+   - Weight training samples by play count and performance stability
+   - Separate "mastered" charts (validation set) from learning set
+
+#### Phase 3: Baseline Model Development
+1. **Simple Models**: Linear regression, Random Forest on enriched features
+2. **Feature Selection**: Identify most predictive features (chart + performance)
+3. **Validation Framework**: K-fold cross-validation using play history stratification
+4. **Performance Metrics**: MAE, RMSE, ranking correlation weighted by confidence
+
+#### Phase 4: Advanced Model Training
 1. **Deep Learning Models**: Neural networks with specialized architectures
 2. **Pattern Recognition**: CNN/RNN for sequence analysis
 3. **Hyperparameter Tuning**: Optimize model performance
 4. **Ensemble Methods**: Combine multiple model predictions
 
-#### Phase 4: Validation and Deployment
-1. **Human Validation**: Expert player feedback
-2. **A/B Testing**: Compare with existing ratings
-3. **Calibration**: Ensure ratings match player expectations
-4. **Production System**: Automated rating pipeline
+#### Phase 5: Validation and Deployment
+1. **Performance-Based Validation**: Compare predictions with actual player results
+2. **A/B Testing**: Sight-reading vs. practiced chart difficulty predictions
+3. **Calibration**: Ensure ratings match 25-year performance baseline
+4. **Production System**: Automated rating pipeline with stats integration
 
 ### 5. Feature Specifications
 
@@ -343,6 +372,16 @@ CORE_FEATURES = {
     'file_format': str,  # '.sm', '.ssc', '.dwi'
     'has_advanced_timing': bool,  # SSC timing events
     'has_warps': bool,  # Format-dependent warp support
+
+    # Player performance features (from Stats.xml)
+    'times_played': int,  # Play count for this chart
+    'average_grade': float,  # Average grade (0-1 normalized)
+    'grade_variance': float,  # Performance consistency
+    'last_played_days_ago': int,  # Recency indicator
+    'perceived_difficulty': float,  # Empirical difficulty from performance
+    'difficulty_delta': float,  # Stated - perceived difficulty
+    'is_sight_readable': bool,  # Played ≤ 2 times (sight-reading indicator)
+    'is_mastered': bool,  # High grade + multiple plays
 }
 ```
 

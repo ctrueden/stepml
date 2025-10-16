@@ -49,13 +49,38 @@
       "path": "[Originals] Teddy/Goofy Goober Rock/Goofy Goober Rock.sm",
       "description": "Simple chart with constant BPM, no timing gimmicks - baseline reference",
       "edge_cases": ["basic_timing", "simple_patterns"]
+    },
+    {
+      "name": "Gallop Patterns",
+      "path": "DDR 5th Mix/MATSURI JAPAN/MATSURI JAPAN.sm",
+      "description": "Clean gallop patterns (12th notes) with stable 178-180 BPM",
+      "edge_cases": ["gallops", "12th_notes", "rhythm_patterns"]
+    },
+    {
+      "name": "Triplet Patterns",
+      "path": "DDR A3/Flip Flap/Flip Flap.sm",
+      "description": "Clean triplet patterns (24th notes) at stable 175 BPM",
+      "edge_cases": ["triplets", "24th_notes", "rhythm_patterns"]
+    },
+    {
+      "name": "Extreme Timing Chaos",
+      "path": "DDR Supernova/CHAOS/CHAOS.sm",
+      "description": "45 BPM changes + 44 stops - extreme timing complexity",
+      "edge_cases": ["extreme_timing", "bpm_changes", "stops", "timing_chaos"]
+    },
+    {
+      "name": "Coordinated Timing",
+      "path": "Jun's DDR 2014/[DDR Artists] - thosestairs/[DDR Artists] - thosestairs.sm",
+      "description": "25 BPM changes (155/310) + 36 stops - coordinated timing patterns",
+      "edge_cases": ["bpm_changes", "stops", "timing_patterns", "bpm_doubling"]
     }
   ],
   "coverage_summary": {
-    "bpm_ranges_tested": ["40-160 (extreme low)", "80-160 (variable)", "93-186 (moderate)", "106-424 (extreme wide)", "160 (stable)", "210 (high)"],
-    "timing_features": ["simple/no changes", "multiple BPM changes", "stops/freezes", "extreme variations"],
+    "bpm_ranges_tested": ["40-160 (extreme low)", "80-160 (variable)", "93-186 (moderate)", "106-424 (extreme wide)", "155-310 (doubling)", "160 (stable)", "175 (stable)", "178-180 (stable)", "210 (high)"],
+    "timing_features": ["simple/no changes", "moderate BPM changes (4-18)", "extreme BPM changes (25-45)", "stops/freezes (2-44)", "coordinated timing patterns"],
+    "rhythm_patterns": ["gallops (12th notes)", "triplets (24th notes)", "16th note streams"],
     "difficulty_ranges": ["1-11 (Goin' Under)", "3-16 (Continue to the real world)"],
     "chart_types": ["dance-single", "dance-double"],
-    "packs_represented": ["DDR 2013", "DDR A3", "StepMania 5", "[Originals]"]
+    "packs_represented": ["DDR 2013", "DDR A3", "DDR 5th Mix", "DDR Supernova", "Jun's DDR 2014", "StepMania 5", "[Originals]"]
   }
 }
