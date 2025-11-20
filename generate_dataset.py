@@ -115,8 +115,13 @@ class DatasetGenerator:
                 normalized_rating = chart_data.normalized_ratings.get(difficulty_key, chart.rating)
 
                 # Build complete row with metadata
+                # NOTE: feature_dict is unpacked first, then we override its normalized_rating
+                # with the correct value from chart_data.normalized_ratings
                 row = {
-                    # File metadata
+                    # All extracted features (includes a default normalized_rating: 0.0)
+                    **feature_dict,
+
+                    # File metadata (override/add)
                     'file_path': str(file_path.relative_to(self.songs_dir.parent)),
                     'pack_name': pack_name,
                     'file_format': file_format,
@@ -131,12 +136,9 @@ class DatasetGenerator:
                     'chart_type': chart.chart_type.value,
                     'difficulty': chart.difficulty.value,
                     'original_rating': chart.rating,
-                    'normalized_rating': normalized_rating,
+                    'normalized_rating': normalized_rating,  # Override the 0.0 from feature_dict
                     'detected_scale': chart_data.detected_scale.value if chart_data.detected_scale else 'unknown',
                     'scale_confidence': chart_data.scale_confidence,
-
-                    # All extracted features
-                    **feature_dict
                 }
 
                 rows.append(row)
