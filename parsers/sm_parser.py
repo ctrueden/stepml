@@ -11,6 +11,8 @@ from utils.data_structures import (
     ChartData, NoteData, TimingEvent, ChartType,
     DifficultyType, ScaleType
 )
+from utils.scale_detector import ScaleDetector
+from utils.rating_normalizer import RatingNormalizer
 
 
 class SMParser:
@@ -36,7 +38,8 @@ class SMParser:
 
     def __init__(self):
         """Initialize the SM parser."""
-        pass
+        self.scale_detector = ScaleDetector()
+        self.rating_normalizer = RatingNormalizer()
 
     def parse_file(self, filepath: str) -> ChartData:
         """
@@ -67,6 +70,9 @@ class SMParser:
         self._parse_metadata(content, chart_data)
         self._parse_timing(content, chart_data)
         self._parse_charts(content, chart_data)
+
+        # Detect scale and normalize ratings
+        self._detect_and_normalize_scale(chart_data)
 
         return chart_data
 
@@ -293,6 +299,32 @@ class SMParser:
 
         # Calculate total notes (excluding mines and hold/roll tails)
         note_data.total_notes = note_data.tap_notes + note_data.hold_notes + note_data.roll_notes
+
+    def _detect_and_normalize_scale(self, chart_data: ChartData):
+        """
+        Detect the rating scale and normalize all chart ratings.
+
+        Args:
+            chart_data: ChartData object to update with scale detection
+        """
+        # Detect scale type
+        detected_scale, confidence = self.scale_detector.detect_scale(
+            chart_data.filepath,
+            chart_data.charts
+        )
+
+        # Update chart data
+        chart_data.detected_scale = detected_scale
+        chart_data.scale_confidence = confidence
+
+        # Normalize ratings for all charts
+        for chart in chart_data.charts:
+            difficulty_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
+            normalized_rating = self.rating_normalizer.normalize(
+                chart.rating,
+                detected_scale
+            )
+            chart_data.normalized_ratings[difficulty_key] = normalized_rating
 
 
 def parse_sm_file(filepath: str) -> ChartData:

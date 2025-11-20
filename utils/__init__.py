@@ -10,6 +10,8 @@ from .data_structures import (
     ChartType,
     TimingEvent
 )
+from .scale_detector import ScaleDetector
+from .rating_normalizer import RatingNormalizer
 
 __all__ = [
     'ChartData',
@@ -19,4 +21,6 @@ __all__ = [
     'DifficultyType',
     'ChartType',
     'TimingEvent',
+    'ScaleDetector',
+    'RatingNormalizer',
 ]

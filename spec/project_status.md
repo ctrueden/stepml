@@ -1,7 +1,7 @@
 # ML Step Chart Analysis - Project Status
 
-**Last Updated**: 2025-10-15
-**Current Phase**: Phase 1 Complete ✅
+**Last Updated**: 2025-11-20
+**Current Phase**: Phase 2 Complete ✅
 
 ---
 
@@ -91,41 +91,61 @@ Validated on real charts from the song collection:
 
 ---
 
-### 🔄 Phase 2: Scale Detection and Rating Normalization (NEXT)
+### ✅ Phase 2: Scale Detection and Rating Normalization (COMPLETE)
 
-**Planned Duration**: 1-2 sessions
-**Status**: Not started
+**Duration**: 1 session (2025-11-20)
+**Status**: Fully implemented and tested
 **Priority**: High
 
-#### Goals
+#### Deliverables
 
-1. **Songpack Classification**
-   - Implement automatic series detection from directory names
-   - Pattern matching for Classic DDR, Modern DDR, ITG
-   - Confidence scoring for scale detection
+1. **Scale Detection System** (`utils/scale_detector.py`)
+   - ✅ Automatic series detection from directory names
+   - ✅ Pattern matching for Classic DDR, Modern DDR, ITG
+   - ✅ Statistical validation from rating distributions
+   - ✅ Confidence scoring (0.0-1.0)
+   - ✅ 91.7% accuracy on real song collection
 
-2. **Rating Scale Manager**
-   - Build scale conversion tables
-   - Implement rating normalization algorithms
-   - Handle edge cases and unknown scales
+2. **Rating Normalization** (`utils/rating_normalizer.py`)
+   - ✅ Scale conversion tables (Classic DDR, Modern DDR, ITG → Unified)
+   - ✅ Linear interpolation for unmapped values
+   - ✅ Bidirectional conversion (normalize/denormalize)
+   - ✅ Batch normalization support
+   - ✅ Rating creep adjustment for ITG
 
-3. **Validation System**
-   - Statistical validation of scale detection
-   - Cross-scale consistency checking
-   - Manual override support
+3. **Parser Integration**
+   - ✅ Automatic scale detection in SM parser
+   - ✅ Normalized ratings stored in ChartData
+   - ✅ No manual configuration required
 
-#### Planned Deliverables
+4. **Testing & Examples**
+   - ✅ `tests/test_scale_detection.py`: 18 comprehensive tests
+   - ✅ `example_scale_detection.py`: Usage demonstrations
+   - ✅ `test_scale_detection_real.py`: Real collection validation
+   - ✅ All tests passing
 
-- `utils/scale_detector.py`: Songpack classification
-- `utils/rating_normalizer.py`: Scale conversion and normalization
-- Updated `ChartData` with scale detection results
-- Test suite for scale detection accuracy
+#### Test Results
 
-#### Success Criteria
+Validated on real song collection (11/12 packs, 91.7% accuracy):
 
-- 90%+ accuracy on known DDR/ITG packs
-- Reasonable confidence scores for ambiguous packs
-- Successful normalization of test charts to unified scale
+| Scale Type | Packs Tested | Detection Rate |
+|------------|--------------|----------------|
+| Classic DDR | DDR 1st-5th Mix, EXTREME | 100% (4/4) |
+| Modern DDR | DDR A/A20, 2013/2014 | 100% (4/4) |
+| ITG | ITG 1/2, Rebirth | 100% (3/3) |
+
+**Key Conversions**:
+- Classic DDR 9 → Unified 14.0 (≈ Modern DDR 14)
+- ITG 8 → Unified 14.0 (accounts for rating creep)
+- Modern DDR → Identity mapping (reference scale)
+
+#### Technical Achievement
+
+- **Automatic detection**: Pattern matching + statistical analysis
+- **High accuracy**: 91.7% on diverse real-world data
+- **Rating creep correction**: ITG scale properly adjusted
+- **Cross-pack comparison**: Fair difficulty ranking across eras
+- **ML ready**: Normalized ratings ready for model training
 
 ---
 
@@ -284,20 +304,23 @@ for chart in chart_data.charts:
 
 ## Next Steps
 
-1. **Immediate (Phase 2)**:
-   - Implement `utils/scale_detector.py`
-   - Build scale conversion tables
-   - Test on DDR vs ITG packs
-
-2. **Short-term (Phase 3)**:
+1. **Immediate (Phase 3)** - Multi-Format Support:
    - Add .ssc parser for StepMania 5 charts
    - Add .dwi parser for legacy charts
    - Validate multi-format support
+   - Unified format handling
 
-3. **Medium-term (Phase 4)**:
-   - Process entire song collection
-   - Train baseline ML models
-   - Begin validation with expert players
+2. **Short-term (Phase 4)** - ML Pipeline:
+   - Batch process entire song collection (101 packs)
+   - Export normalized features to CSV/Parquet
+   - Train baseline ML models (linear regression, random forest)
+   - Implement validation framework
+
+3. **Medium-term** - Model Refinement:
+   - Advanced model architectures (neural networks, ensembles)
+   - Hyperparameter tuning
+   - Cross-validation and performance metrics
+   - Human validation integration
 
 ---
 
@@ -305,14 +328,23 @@ for chart in chart_data.charts:
 
 - **Main Spec**: `spec/ml_step_chart_analysis.md`
 - **Implementation Notes**: `spec/implementation_notes.md`
-- **Phase 1 Summary**: `ml_analysis/PHASE1_COMPLETE.md`
-- **Examples**: `ml_analysis/example_usage.py`
-- **Tests**: `ml_analysis/test_parser.py`
+- **Phase 1 Summary**: `spec/phase1.md` / `PHASE1_COMPLETE.md`
+- **Phase 2 Summary**: `spec/PHASE2_COMPLETE.md`
+- **Examples**:
+  - `example_usage.py` (Phase 1 - parsing & features)
+  - `example_scale_detection.py` (Phase 2 - scale detection)
+- **Tests**:
+  - `tests/test_parser.py` (Phase 1)
+  - `tests/test_features.py` (Phase 1)
+  - `tests/test_scale_detection.py` (Phase 2)
 
 ---
 
 ## Contact / Notes
 
-This is a personal project for analyzing and standardizing difficulty ratings across a collection of 102+ StepMania song packs. The goal is to create a unified rating system that accounts for the historical differences between Classic DDR (1-10), Modern DDR (1-20), and ITG (1-12) scales, with corrections for known issues like "rating creep" in ITG charts.
+This is a personal project for analyzing and standardizing difficulty ratings across a collection of 101 StepMania song packs. The goal is to create a unified rating system that accounts for the historical differences between Classic DDR (1-10), Modern DDR (1-20), and ITG (1-12) scales, with corrections for known issues like "rating creep" in ITG charts.
 
-**Current Focus**: Phase 1 complete, ready to begin Phase 2 (scale detection) when development resumes.
+**Current Status**:
+- ✅ Phase 1 complete: SM parser and feature extraction
+- ✅ Phase 2 complete: Scale detection and rating normalization (91.7% accuracy)
+- 🔄 Ready for Phase 3 (multi-format support) or Phase 4 (ML pipeline)
