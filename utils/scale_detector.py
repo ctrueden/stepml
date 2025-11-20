@@ -146,13 +146,15 @@ class ScaleDetector:
         """
         Detect scale type from statistical analysis of chart ratings.
 
-        Analyzes rating distribution to infer scale type:
-        - Classic DDR: ratings typically 1-10 (rarely exceeds 10)
-        - Modern DDR: ratings can go up to 18-20
-        - ITG: ratings typically 1-12
+        Strategy: Use rating ranges to definitively identify modern DDR scales.
+        Classic DDR and ITG both used 1-10 range (ITG extended to 12), so ratings
+        above 10 are a clear signal of modern DDR (1-20 scale).
 
         Returns:
             Tuple of (ScaleType or None, confidence)
+            - Returns (MODERN_DDR, high_confidence) if max_rating > 10
+            - Returns (None, 0.0) if ambiguous (all ratings <= 10)
+              This signals fallback to path-based detection
         """
         if not charts:
             return (None, 0.0)
@@ -163,32 +165,49 @@ class ScaleDetector:
             return (None, 0.0)
 
         max_rating = max(ratings)
+        min_rating = min(ratings)
         avg_rating = sum(ratings) / len(ratings)
+        rating_spread = max_rating - min_rating
 
-        # Heuristic-based detection
-        if max_rating <= 10:
-            # Could be Classic DDR or a low-rated ITG pack
-            # Classic DDR tends to have broader distribution
-            if avg_rating < 6 and len(ratings) >= 3:
-                return (ScaleType.CLASSIC_DDR, 0.6)
-            else:
-                return (ScaleType.CLASSIC_DDR, 0.4)
+        # Clear modern DDR signal: classic DDR never went above 10
+        if max_rating > 10:
+            # The higher the max rating, the more confident we are
+            if max_rating > 15:
+                return (ScaleType.MODERN_DDR, 0.98)  # Very high confidence
+            elif max_rating > 12:
+                return (ScaleType.MODERN_DDR, 0.95)  # High confidence
+            else:  # 11-12 range
+                return (ScaleType.MODERN_DDR, 0.90)  # Still quite confident
 
-        elif max_rating <= 13:
-            # Likely ITG (1-12 scale with occasional 13s)
-            return (ScaleType.ITG, 0.5)
+        # All ratings <= 10: Check for modern scale inflation
+        # In classic DDR, getting a 10 rating was very rare (only the hardest songs)
+        # In modern DDR, 10 is mid-range difficulty
 
-        elif max_rating <= 18:
-            # Could be high ITG or Modern DDR
-            # ITG rarely goes above 12 officially
-            if max_rating > 14:
-                return (ScaleType.MODERN_DDR, 0.6)
-            else:
-                return (ScaleType.ITG, 0.5)
+        # Count high ratings (9s and 10s)
+        high_rating_count = sum(1 for r in ratings if r >= 9)
 
-        else:  # max_rating > 18
-            # Definitely Modern DDR (1-20 scale)
-            return (ScaleType.MODERN_DDR, 0.8)
+        # Heuristic 1: Multiple 9s or 10s strongly suggests modern
+        # Classic DDR had very few 9s/10s total, so multiple for one song = modern
+        if high_rating_count >= 2:
+            return (ScaleType.MODERN_DDR, 0.88)  # High confidence - very strong signal
+
+        # Heuristic 2: Single 10 with reasonable chart set
+        if max_rating == 10 and len(ratings) >= 4:
+            # A 10 rating with high average suggests modern scale
+            if avg_rating > 5.5:
+                return (ScaleType.MODERN_DDR, 0.75)
+            # Even with lower average, a 10 is suspicious if there are
+            # beginner/easy charts (classic 10s were standalone hard songs)
+            elif min_rating <= 3 and len(ratings) >= 5:
+                return (ScaleType.MODERN_DDR, 0.70)
+
+        # Heuristic 3: Single 9 with full difficulty spread
+        elif max_rating == 9 and len(ratings) >= 5 and avg_rating > 5.0:
+            return (ScaleType.MODERN_DDR, 0.65)
+
+        # Ambiguous: could be Classic DDR, ITG, or moderate modern charts
+        # Return None to signal fallback to path-based detection
+        return (None, 0.0)
 
     def _combine_detections(
         self,
@@ -198,40 +217,50 @@ class ScaleDetector:
         """
         Combine name-based and statistics-based detections.
 
-        Name-based detection is weighted more heavily since it's more reliable.
+        Strategy (statistics-first with path fallback):
+        1. If statistics gives high confidence (e.g., max_rating > 10), trust it
+        2. If statistics is ambiguous (None), fall back to path-based detection
+        3. If both agree, boost confidence slightly
 
         Returns:
             Tuple of (ScaleType, confidence)
         """
         name_scale, name_conf = name_detection
 
-        # If we have a high-confidence name match, use it
-        if name_scale is not None and name_conf >= 0.8:
-            return (name_scale, name_conf)
-
-        # If we have no name match, rely on statistics
-        if name_scale is None:
-            if stats_detection and stats_detection[0] is not None:
-                return stats_detection
-            else:
-                # Complete unknown
-                return (ScaleType.UNKNOWN, 0.0)
-
-        # Combine both signals
+        # Priority 1: High-confidence statistical detection
+        # If max_rating > 10, this is definitely modern DDR regardless of path
         if stats_detection and stats_detection[0] is not None:
             stats_scale, stats_conf = stats_detection
 
-            # If both agree, boost confidence
-            if name_scale == stats_scale:
-                combined_conf = min(1.0, name_conf * 0.7 + stats_conf * 0.3 + 0.1)
+            # High confidence from statistics (e.g., max_rating > 10)
+            if stats_conf >= 0.85:
+                # If path agrees, boost confidence slightly
+                if name_scale == stats_scale and name_conf > 0.5:
+                    combined_conf = min(1.0, stats_conf + 0.02)
+                    return (stats_scale, combined_conf)
+                else:
+                    # Trust statistics even if path disagrees
+                    return (stats_scale, stats_conf)
+
+        # Priority 2: Path-based detection (fallback)
+        # Used when statistics are ambiguous (all ratings <= 10)
+        # This distinguishes between Classic DDR and ITG
+        if name_scale is not None:
+            # If statistics and path agree, boost confidence
+            if stats_detection and stats_detection[0] == name_scale:
+                combined_conf = min(1.0, name_conf + 0.05)
                 return (name_scale, combined_conf)
-
-            # If they disagree, prefer name-based but lower confidence
             else:
-                return (name_scale, name_conf * 0.8)
+                # Use path detection alone
+                return (name_scale, name_conf)
 
-        # Only name-based detection available
-        return (name_scale, name_conf)
+        # No reliable detection from either source
+        if stats_detection and stats_detection[0] is not None:
+            # Fall back to low-confidence stats
+            return stats_detection
+        else:
+            # Complete unknown
+            return (ScaleType.UNKNOWN, 0.0)
 
     def detect_scale_from_chart(self, chart_data: ChartData) -> Tuple[ScaleType, float]:
         """
