@@ -159,7 +159,7 @@ class ScaleDetector:
         if not charts:
             return (None, 0.0)
 
-        # Extract all ratings
+        # Extract all ratings and step counts
         ratings = [chart.rating for chart in charts if chart.rating > 0]
         if not ratings:
             return (None, 0.0)
@@ -167,7 +167,10 @@ class ScaleDetector:
         max_rating = max(ratings)
         min_rating = min(ratings)
         avg_rating = sum(ratings) / len(ratings)
-        rating_spread = max_rating - min_rating
+
+        # Create rating-to-stepcount mapping for high-rated charts
+        high_rating_charts = [(chart.rating, chart.total_notes) for chart in charts
+                             if chart.rating >= 9 and chart.total_notes > 0]
 
         # Clear modern DDR signal: classic DDR never went above 10
         if max_rating > 10:
@@ -179,34 +182,40 @@ class ScaleDetector:
             else:  # 11-12 range
                 return (ScaleType.MODERN_DDR, 0.90)  # Still quite confident
 
-        # All ratings <= 10: Check for modern scale inflation
-        # In classic DDR, getting a 10 rating was very rare (only the hardest songs)
-        # In modern DDR, 10 is mid-range difficulty
+        # All ratings <= 10: Use step count correlation to detect scale inflation
+        # Classic DDR: rating 10 = 500-700 steps (MAX 300, PARANOiA Survivor)
+        # Modern DDR: rating 10 = 250-400 steps (mid-difficulty)
+        #
+        # Key insight: Classic 9-10s are genuinely difficult with high step counts
+        #              Modern 9-10s are inflated ratings with moderate step counts
 
-        # Count high ratings (9s and 10s)
-        high_rating_count = sum(1 for r in ratings if r >= 9)
+        if high_rating_charts:
+            # Analyze the highest rated chart's step count
+            max_rated_chart = max(high_rating_charts, key=lambda x: x[0])
+            rating, step_count = max_rated_chart
 
-        # Heuristic 1: Multiple 9s or 10s strongly suggests modern
-        # Classic DDR had very few 9s/10s total, so multiple for one song = modern
-        if high_rating_count >= 2:
-            return (ScaleType.MODERN_DDR, 0.88)  # High confidence - very strong signal
+            # Classic DDR 10s typically have 500+ steps (MAX 300: ~600, PSMO: ~550)
+            # Modern DDR 10s typically have 200-400 steps
+            if rating == 10:
+                if step_count >= 500:
+                    # High step count for rating 10 → likely classic DDR
+                    return (None, 0.0)  # Fall back to path hints
+                elif step_count <= 400:
+                    # Low step count for rating 10 → modern DDR inflation
+                    return (ScaleType.MODERN_DDR, 0.85)
+                # In between (400-500): ambiguous, fall back to path
 
-        # Heuristic 2: Single 10 with reasonable chart set
-        if max_rating == 10 and len(ratings) >= 4:
-            # A 10 rating with high average suggests modern scale
-            if avg_rating > 5.5:
-                return (ScaleType.MODERN_DDR, 0.75)
-            # Even with lower average, a 10 is suspicious if there are
-            # beginner/easy charts (classic 10s were standalone hard songs)
-            elif min_rating <= 3 and len(ratings) >= 5:
-                return (ScaleType.MODERN_DDR, 0.70)
+            # Classic DDR 9s typically have 400+ steps
+            # Modern DDR 9s typically have 200-350 steps
+            elif rating == 9:
+                if step_count >= 450:
+                    # High step count → likely classic DDR
+                    return (None, 0.0)  # Fall back to path hints
+                elif step_count <= 350 and len(ratings) >= 4:
+                    # Low step count with full chart set → modern DDR
+                    return (ScaleType.MODERN_DDR, 0.75)
 
-        # Heuristic 3: Single 9 with full difficulty spread
-        elif max_rating == 9 and len(ratings) >= 5 and avg_rating > 5.0:
-            return (ScaleType.MODERN_DDR, 0.65)
-
-        # Ambiguous: could be Classic DDR, ITG, or moderate modern charts
-        # Return None to signal fallback to path-based detection
+        # No strong statistical signal - fall back to path-based detection
         return (None, 0.0)
 
     def _combine_detections(
