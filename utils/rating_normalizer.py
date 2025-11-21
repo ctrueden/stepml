@@ -26,10 +26,11 @@ class RatingNormalizer:
         4: 7.0,
         5: 9.0,
         6: 10.0,
-        7: 11.0,   # Classic 7 ≈ Modern 11
-        8: 13.0,   # Classic 8 ≈ Modern 13
-        9: 14.0,   # Classic 9 ≈ Modern 14
-        10: 16.0,  # Classic 10 (flashing 10) ≈ Modern 16
+        7: 10.5,   # Classic 7 ≈ Modern 10-11
+        8: 12.0,   # Classic 8 ≈ Modern 12
+        9: 13.0,   # Classic 9 ≈ Modern 13
+        10: 14.5,  # Classic 10 baseline (refined using metrics)
+                   # Easy 10s (SAKURA): ~13, Hard 10s (PSMO): ~16
     }
 
     ITG_TO_UNIFIED = {
@@ -77,7 +78,9 @@ class RatingNormalizer:
         self,
         rating: int,
         source_scale: ScaleType,
-        interpolate: bool = True
+        interpolate: bool = True,
+        notes_per_second: Optional[float] = None,
+        total_notes: Optional[int] = None
     ) -> float:
         """
         Normalize a rating from a source scale to the unified scale.
@@ -86,6 +89,8 @@ class RatingNormalizer:
             rating: Original rating value
             source_scale: The scale type of the original rating
             interpolate: If True, interpolate between known values
+            notes_per_second: Optional NPS for metric-based refinement
+            total_notes: Optional step count for metric-based refinement
 
         Returns:
             Normalized rating on unified scale (1-20)
@@ -99,6 +104,10 @@ class RatingNormalizer:
 
         conversion_table = self.conversion_tables[source_scale]
 
+        # Special refinement for Classic DDR 10s using metrics
+        if source_scale == ScaleType.CLASSIC_DDR and rating == 10 and notes_per_second is not None:
+            return self._refine_classic_10(notes_per_second, total_notes)
+
         # Direct lookup if rating exists in table
         if rating in conversion_table:
             return conversion_table[rating]
@@ -109,6 +118,50 @@ class RatingNormalizer:
 
         # Fall back to identity mapping
         return float(rating)
+
+    def _refine_classic_10(
+        self,
+        notes_per_second: float,
+        total_notes: Optional[int] = None
+    ) -> float:
+        """
+        Refine Classic DDR 10 ratings using chart metrics.
+
+        Classic 10s vary widely in modern scale (13-16):
+        - Easy 10s (SAKURA, ~3-8 NPS): Modern 13
+        - Medium 10s (~8-14 NPS): Modern 14
+        - Hard 10s (~14-20 NPS): Modern 15
+        - Flashing 10s (PSMO, 20+ NPS): Modern 16
+
+        Based on dataset analysis:
+        - Rating 9 median: 9.4 NPS
+        - Rating 10 median: 15.7 NPS
+        - Rating 10 range: 2.7-37.5 NPS
+
+        Args:
+            notes_per_second: Notes per second for the chart
+            total_notes: Optional total step count (fallback if NPS unreliable)
+
+        Returns:
+            Refined rating (13.0 - 16.5)
+        """
+        # Primary: use notes_per_second (normalizes for song length)
+        if notes_per_second >= 20.0:
+            # Flashing 10 territory (PSMO level)
+            return 16.0
+        elif notes_per_second >= 14.0:
+            # Hard 10s
+            return 15.0
+        elif notes_per_second >= 8.0:
+            # Medium 10s
+            return 14.0
+        elif notes_per_second >= 4.0:
+            # Easy 10s (SAKURA level)
+            return 13.0
+        else:
+            # Very easy or possibly misclassified
+            # But if it's rated 10, trust the rating with caution
+            return 13.0
 
     def _interpolate_rating(
         self,

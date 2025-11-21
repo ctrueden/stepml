@@ -370,11 +370,47 @@ class SSCParser:
         # Normalize ratings for all charts
         for chart in chart_data.charts:
             difficulty_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
+
+            # Calculate notes_per_second for metric-based refinement
+            notes_per_second = self._calculate_nps(chart, chart_data.bpms)
+
             normalized_rating = self.rating_normalizer.normalize(
                 chart.rating,
-                detected_scale
+                detected_scale,
+                notes_per_second=notes_per_second,
+                total_notes=chart.total_notes
             )
             chart_data.normalized_ratings[difficulty_key] = normalized_rating
+
+    def _calculate_nps(self, chart: NoteData, bpms: List[TimingEvent]) -> float:
+        """
+        Calculate notes per second for a chart.
+
+        Args:
+            chart: Chart data with note positions
+            bpms: BPM timing events
+
+        Returns:
+            Notes per second, or 0 if cannot calculate
+        """
+        if not chart.note_positions or not bpms or chart.total_notes == 0:
+            return 0.0
+
+        # Get last note beat
+        last_beat = chart.note_positions[-1][0]
+
+        # Calculate duration in seconds using primary BPM
+        # (Simplified: assumes constant BPM for most charts)
+        bpm = bpms[0].value
+        if bpm <= 0:
+            return 0.0
+
+        duration_seconds = (last_beat / bpm) * 60.0
+
+        if duration_seconds <= 0:
+            return 0.0
+
+        return chart.total_notes / duration_seconds
 
 
 def parse_ssc_file(filepath: str) -> ChartData:
