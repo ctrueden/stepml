@@ -129,7 +129,7 @@ class DWIParser:
         Parse all chart sections from .dwi file.
 
         DWI format: #SINGLE:DIFFICULTY:RATING:NOTEDATA;
-                    #DOUBLE:DIFFICULTY:RATING:NOTEDATA;
+                    #DOUBLE:DIFFICULTY:RATING:LEFT_NOTES:RIGHT_NOTES;
         """
         # Pattern to match SINGLE/DOUBLE chart definitions
         chart_pattern = r'#(SINGLE|DOUBLE)\s*:\s*([^:]+)\s*:\s*(\d+)\s*:\s*([^;]+);'
@@ -177,11 +177,11 @@ class DWIParser:
             # Parse the note data (DWI compressed format)
             if chart_data.bpms:
                 bpm = chart_data.bpms[0].value
-                self._parse_dwi_note_data(notes_data, note_data, bpm)
+                self._parse_dwi_note_data(notes_data, note_data, bpm, chart_type)
 
             chart_data.charts.append(note_data)
 
-    def _parse_dwi_note_data(self, notes_str: str, note_data: NoteData, bpm: float):
+    def _parse_dwi_note_data(self, notes_str: str, note_data: NoteData, bpm: float, chart_type: ChartType):
         """
         Parse DWI compressed note data format.
 
@@ -203,20 +203,37 @@ class DWIParser:
         - E = Down+Up+Right (2+4+8)
         - F = All four (1+2+4+8)
 
+        For DOUBLE charts, the note string contains two sections separated by ':':
+        - First section: left 4 panels
+        - Second section: right 4 panels
+
         Args:
             notes_str: Compressed note string
             note_data: NoteData object to populate
             bpm: BPM for timing calculations
+            chart_type: SINGLE or DOUBLE chart type
         """
         # DWI typically uses 1/8th note resolution (8 subdivisions per beat)
         # Each character represents 1/8th of a beat
         beat_increment = 0.125  # 1/8th beat
 
-        current_beat = 0.0
-        columns = 4 if note_data.chart_type == ChartType.SINGLE else 8
+        # For DOUBLE charts, split into left and right panel sections
+        if chart_type == ChartType.DOUBLE and ':' in notes_str:
+            left_notes, right_notes = notes_str.split(':', 1)
+            # Parse both sections and merge
+            self._parse_double_panels(left_notes, right_notes, note_data, beat_increment)
+        else:
+            # SINGLE chart or DOUBLE chart without separator (old format)
+            self._parse_single_panel(notes_str, note_data, beat_increment, chart_type)
 
-        for i, char in enumerate(notes_str.upper()):
-            # Convert hex character to integer
+        # Calculate total notes
+        note_data.total_notes = note_data.tap_notes + note_data.hold_notes + note_data.roll_notes
+
+    def _parse_single_panel(self, notes_str: str, note_data: NoteData, beat_increment: float, chart_type: ChartType):
+        """Parse a single panel section (for SINGLE charts)."""
+        current_beat = 0.0
+
+        for char in notes_str.upper():
             if char == '0':
                 current_beat += beat_increment
                 continue
@@ -233,21 +250,11 @@ class DWIParser:
                     continue
 
                 # Convert bitwise encoding to 4-column format
-                if columns == 4:
-                    # Single mode (4 panels)
-                    left = '1' if (value & 1) else '0'    # Bit 0
-                    down = '1' if (value & 2) else '0'    # Bit 1
-                    up = '1' if (value & 4) else '0'      # Bit 2
-                    right = '1' if (value & 8) else '0'   # Bit 3
-                    note_line = left + down + up + right
-                else:
-                    # Double mode (8 panels) - need different encoding
-                    # For now, treat as single mode on left side
-                    left = '1' if (value & 1) else '0'
-                    down = '1' if (value & 2) else '0'
-                    up = '1' if (value & 4) else '0'
-                    right = '1' if (value & 8) else '0'
-                    note_line = left + down + up + right + '0000'
+                left = '1' if (value & 1) else '0'    # Bit 0
+                down = '1' if (value & 2) else '0'    # Bit 1
+                up = '1' if (value & 4) else '0'      # Bit 2
+                right = '1' if (value & 8) else '0'   # Bit 3
+                note_line = left + down + up + right
 
                 # Count note types
                 tap_count = note_line.count('1')
@@ -268,8 +275,106 @@ class DWIParser:
                 current_beat += beat_increment
                 continue
 
-        # Calculate total notes
-        note_data.total_notes = note_data.tap_notes + note_data.hold_notes + note_data.roll_notes
+    def _parse_double_panels(self, left_str: str, right_str: str, note_data: NoteData, beat_increment: float):
+        """Parse DOUBLE chart with separate left and right panel sections."""
+        # Parse left panel (columns 0-3)
+        left_notes = []
+        current_beat = 0.0
+
+        for char in left_str.upper():
+            if char == '0':
+                left_notes.append((current_beat, '0000'))
+                current_beat += beat_increment
+                continue
+
+            try:
+                if char.isdigit():
+                    value = int(char)
+                else:
+                    value = ord(char) - ord('A') + 10
+
+                if value < 0 or value > 15:
+                    left_notes.append((current_beat, '0000'))
+                    current_beat += beat_increment
+                    continue
+
+                left = '1' if (value & 1) else '0'
+                down = '1' if (value & 2) else '0'
+                up = '1' if (value & 4) else '0'
+                right = '1' if (value & 8) else '0'
+                left_notes.append((current_beat, left + down + up + right))
+                current_beat += beat_increment
+
+            except (ValueError, IndexError):
+                left_notes.append((current_beat, '0000'))
+                current_beat += beat_increment
+                continue
+
+        # Parse right panel (columns 4-7)
+        right_notes = []
+        current_beat = 0.0
+
+        for char in right_str.upper():
+            if char == '0':
+                right_notes.append((current_beat, '0000'))
+                current_beat += beat_increment
+                continue
+
+            try:
+                if char.isdigit():
+                    value = int(char)
+                else:
+                    value = ord(char) - ord('A') + 10
+
+                if value < 0 or value > 15:
+                    right_notes.append((current_beat, '0000'))
+                    current_beat += beat_increment
+                    continue
+
+                left = '1' if (value & 1) else '0'
+                down = '1' if (value & 2) else '0'
+                up = '1' if (value & 4) else '0'
+                right = '1' if (value & 8) else '0'
+                right_notes.append((current_beat, left + down + up + right))
+                current_beat += beat_increment
+
+            except (ValueError, IndexError):
+                right_notes.append((current_beat, '0000'))
+                current_beat += beat_increment
+                continue
+
+        # Merge left and right panels into 8-column format
+        # Create a dictionary to merge notes at the same beat
+        merged_notes = {}
+
+        for beat, notes in left_notes:
+            if notes != '0000':
+                merged_notes[beat] = notes + '0000'
+
+        for beat, notes in right_notes:
+            if notes != '0000':
+                if beat in merged_notes:
+                    # Combine with existing left notes
+                    left_part = merged_notes[beat][:4]
+                    merged_notes[beat] = left_part + notes
+                else:
+                    # Only right notes at this beat
+                    merged_notes[beat] = '0000' + notes
+
+        # Count notes and populate note_data
+        for beat in sorted(merged_notes.keys()):
+            note_line = merged_notes[beat]
+            tap_count = note_line.count('1')
+
+            if tap_count > 0:
+                note_data.tap_notes += tap_count
+
+                # Check for jumps (2+ simultaneous notes)
+                if tap_count >= 2:
+                    note_data.jump_count += 1
+
+                # Store note position
+                note_data.note_positions.append((beat, note_line))
 
     def _detect_and_normalize_scale(self, chart_data: ChartData):
         """

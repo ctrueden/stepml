@@ -226,50 +226,65 @@ class ScaleDetector:
         """
         Combine name-based and statistics-based detections.
 
-        Strategy (statistics-first with path fallback):
-        1. If statistics gives high confidence (e.g., max_rating > 10), trust it
-        2. If statistics is ambiguous (None), fall back to path-based detection
-        3. If both agree, boost confidence slightly
+        Priority logic:
+        1. ITG/Modern DDR packs (high path confidence) → Always trust path
+           - ITG packs never had rating updates
+           - Modern DDR packs never had classic ratings
+        2. Classic DDR packs → Use statistics to detect updated songs
+           - Songs may have been updated from classic to modern scale
+        3. Unknown packs → Use statistics (only way to classify)
 
         Returns:
             Tuple of (ScaleType, confidence)
         """
         name_scale, name_conf = name_detection
+        stats_scale, stats_conf = None, 0.0
 
-        # Priority 1: High-confidence statistical detection
-        # If max_rating > 10, this is definitely modern DDR regardless of path
         if stats_detection and stats_detection[0] is not None:
             stats_scale, stats_conf = stats_detection
 
-            # High confidence from statistics (e.g., max_rating > 10)
-            if stats_conf >= 0.85:
-                # If path agrees, boost confidence slightly
-                if name_scale == stats_scale and name_conf > 0.5:
-                    combined_conf = min(1.0, stats_conf + 0.02)
-                    return (stats_scale, combined_conf)
-                else:
-                    # Trust statistics even if path disagrees
-                    return (stats_scale, stats_conf)
-
-        # Priority 2: Path-based detection (fallback)
-        # Used when statistics are ambiguous (all ratings <= 10)
-        # This distinguishes between Classic DDR and ITG
-        if name_scale is not None:
-            # If statistics and path agree, boost confidence
-            if stats_detection and stats_detection[0] == name_scale:
-                combined_conf = min(1.0, name_conf + 0.05)
-                return (name_scale, combined_conf)
+        # Priority 1: Trust ITG and Modern DDR path detection
+        # These packs are consistent - never override with statistics
+        if name_scale in (ScaleType.ITG, ScaleType.MODERN_DDR) and name_conf >= 0.8:
+            # High confidence path detection for ITG or modern DDR
+            # Don't override - these packs are internally consistent
+            if stats_scale == name_scale:
+                # Statistics agree - boost confidence slightly
+                return (name_scale, min(1.0, name_conf + 0.05))
             else:
-                # Use path detection alone
+                # Trust path even if statistics disagree
                 return (name_scale, name_conf)
 
-        # No reliable detection from either source
-        if stats_detection and stats_detection[0] is not None:
-            # Fall back to low-confidence stats
-            return stats_detection
-        else:
-            # Complete unknown
-            return (ScaleType.UNKNOWN, 0.0)
+        # Priority 2: Classic DDR packs - allow statistical override
+        # These packs may contain songs updated to modern scale
+        if name_scale == ScaleType.CLASSIC_DDR:
+            if stats_scale == ScaleType.MODERN_DDR and stats_conf >= 0.85:
+                # Strong statistical evidence of modern ratings
+                # Override classic path detection
+                return (stats_scale, stats_conf)
+            elif stats_scale == ScaleType.CLASSIC_DDR or stats_scale is None:
+                # Statistics agree with classic, or are ambiguous
+                # Trust path detection
+                return (name_scale, name_conf)
+            else:
+                # Weak statistical signal - trust path
+                return (name_scale, name_conf)
+
+        # Priority 3: Unknown packs - rely on statistics
+        # No path information, must use statistical detection
+        if name_scale is None or name_conf < 0.5:
+            if stats_scale is not None and stats_conf >= 0.65:
+                # Reasonable statistical confidence
+                return (stats_scale, stats_conf)
+            elif name_scale is not None:
+                # Low confidence path detection, no better alternative
+                return (name_scale, name_conf)
+            else:
+                # Complete unknown
+                return (ScaleType.UNKNOWN, 0.0)
+
+        # Default: use path detection
+        return (name_scale, name_conf)
 
     def detect_scale_from_chart(self, chart_data: ChartData) -> Tuple[ScaleType, float]:
         """
