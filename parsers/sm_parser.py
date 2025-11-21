@@ -225,7 +225,9 @@ class SMParser:
         - Each measure is separated by a comma
         - Each line represents a subdivision of a beat
         - For dance-single: 4 columns (LDUR - Left, Down, Up, Right)
+        - For dance-solo: 6 columns (L, D, U, R, UL, UR - includes diagonals)
         - For dance-double: 8 columns
+        - For dance-couple: 8 columns
 
         Note types:
         - 0: no note
@@ -243,7 +245,14 @@ class SMParser:
         measures = notes_str.split(',')
 
         current_beat = 0.0
-        columns = 4 if note_data.chart_type == ChartType.SINGLE else 8
+
+        # Determine column count based on chart type
+        if note_data.chart_type == ChartType.SINGLE:
+            columns = 4
+        elif note_data.chart_type == ChartType.SOLO:
+            columns = 6
+        else:  # DOUBLE and COUPLE
+            columns = 8
 
         for measure_idx, measure in enumerate(measures):
             # Remove whitespace and get note lines
