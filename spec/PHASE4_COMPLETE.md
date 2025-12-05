@@ -199,7 +199,7 @@ python example_ml_usage.py "path/to/chart.sm"
 
 ### Core Implementation
 ```
-ml_analysis/
+stepchart-reclassify/
 ├── generate_dataset.py              # Dataset generation pipeline
 ├── train_baseline_models.py         # Model training script
 ├── example_ml_usage.py              # Inference example

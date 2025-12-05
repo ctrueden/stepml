@@ -8,7 +8,7 @@ Phase 1 of the ML-based step chart analysis project has been successfully implem
 
 ### 1. Project Structure
 ```
-ml_analysis/
+stepchart-reclassify/
 ├── parsers/          # Chart file parsers
 │   ├── __init__.py
 │   └── sm_parser.py  # .sm format parser
@@ -152,4 +152,4 @@ for chart in chart_data.charts:
 
 **Status**: ✅ Phase 1 Complete and Tested
 **Date**: 2025-10-15
-**Location**: `/home/curtis/Games/StepMania/ml_analysis/`
+**Location**: `/home/curtis/Games/StepMania/stepchart-reclassify/`

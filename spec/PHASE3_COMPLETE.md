@@ -266,7 +266,7 @@ Feature extraction enhanced with format awareness:
 ## File Structure
 
 ```
-ml_analysis/
+stepchart-reclassify/
 ├── parsers/
 │   ├── __init__.py              # ✅ Updated exports
 │   ├── sm_parser.py             # ✅ Phase 1

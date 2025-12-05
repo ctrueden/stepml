@@ -165,7 +165,7 @@ Tested on real song collection:
 ## File Structure
 
 ```
-ml_analysis/
+stepchart-reclassify/
 ├── utils/
 │   ├── scale_detector.py        # ✅ Phase 2
 │   ├── rating_normalizer.py     # ✅ Phase 2

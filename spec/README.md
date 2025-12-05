@@ -34,7 +34,7 @@ This directory contains the specification and documentation for the ML-based Ste
 
 ```
 /home/curtis/Games/StepMania/
-├── ml_analysis/                           # Main implementation
+├── stepchart-reclassify/                  # Main implementation
 │   ├── parsers/                           # File parsers
 │   ├── features/                          # Feature extraction
 │   ├── utils/                             # Data structures
@@ -90,7 +90,7 @@ This directory contains the specification and documentation for the ML-based Ste
 
 ### Running Tests
 ```bash
-cd ../ml_analysis
+cd ../stepchart-reclassify
 uv run test_parser.py
 uv run test_parser.py "../Songs/[path-to-chart]/chart.sm"
 uv run example_usage.py "../Songs/[path-to-chart]/chart.sm"

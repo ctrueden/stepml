@@ -62,7 +62,7 @@ First time setup or after intentional changes to feature extraction:
 
 ```bash
 # Generate baseline from current implementation
-cd /home/curtis/Games/StepMania/ml_analysis
+cd /home/curtis/Games/StepMania/stepchart-reclassify
 uv run python scripts/generate_baseline.py
 ```
 
@@ -72,7 +72,7 @@ This creates `baseline_features.json` with feature values from all test charts.
 
 Run all tests:
 ```bash
-cd /home/curtis/Games/StepMania/ml_analysis
+cd /home/curtis/Games/StepMania/stepchart-reclassify
 uv run pytest tests/ -v
 ```
 

@@ -16,7 +16,7 @@ Your collection contains all three major formats:
 
 ### Phase 1: Core Parser (Week 1-2) ✅ COMPLETE
 **Status**: Completed 2025-10-15
-**Location**: `/home/curtis/Games/StepMania/ml_analysis/`
+**Location**: `/home/curtis/Games/StepMania/stepchart-reclassify/`
 
 **Implemented**:
 1. ✅ `.sm` parser - fully functional with comprehensive metadata extraction
@@ -89,7 +89,7 @@ Songs/[Originals] Teddy/     → Custom (unknown scale)
 
 ## Implemented Data Structures ✅
 
-**Location**: `ml_analysis/utils/data_structures.py`
+**Location**: `stepchart-reclassify/utils/data_structures.py`
 
 All data structures have been implemented as planned with enhancements:
 
@@ -155,7 +155,7 @@ class FeatureSet:
 
 ```bash
 # Actual implementation structure:
-ml_analysis/
+stepchart-reclassify/
 ├── parsers/          # Chart parsers
 ├── features/         # Feature extraction
 ├── utils/            # Data structures
@@ -199,15 +199,15 @@ for chart in chart_data.charts:
 
 ### Running Tests
 ```bash
-cd ml_analysis
+cd stepchart-reclassify
 uv run python3 test_parser.py           # Runs on first 3 .sm files found
 uv run python3 test_parser.py <path>    # Test specific file
 uv run python3 example_usage.py <path>  # See usage examples
 ```
 
 ### Documentation
-- `ml_analysis/PHASE1_COMPLETE.md` - Detailed phase 1 summary
-- `ml_analysis/example_usage.py` - Practical usage examples
+- `stepchart-reclassify/PHASE1_COMPLETE.md` - Detailed phase 1 summary
+- `stepchart-reclassify/example_usage.py` - Practical usage examples
 - `spec/ml_step_chart_analysis.md` - Complete technical specification
 
 ## Project Status Summary
