@@ -39,13 +39,13 @@ class RatingNormalizer:
         3: 5.0,
         4: 7.0,
         5: 9.0,
-        6: 11.0,
-        7: 12.0,   # ITG has rating creep starting here
-        8: 14.0,   # ITG 8 ≈ Classic DDR 9 ≈ Modern 14
-        9: 15.0,   # ITG 9 ≈ Classic DDR hard-9/10 ≈ Modern 15
-        10: 16.5,  # ITG 10 ≈ Modern 16-17
-        11: 18.0,  # ITG 11 ≈ Modern 18
-        12: 19.0,  # ITG 12 ≈ Modern 19
+        6: 10.0,   # ITG 6 ≈ Modern 10
+        7: 11.0,   # ITG 7 ≈ Modern 11
+        8: 12.5,   # ITG 8 ≈ Modern 12-13 (reduced from 14.0)
+        9: 14.0,   # ITG 9 ≈ Modern 14 (reduced from 15.0)
+        10: 15.5,  # ITG 10 ≈ Modern 15-16 (reduced from 16.5)
+        11: 17.0,  # ITG 11 ≈ Modern 17 (reduced from 18.0)
+        12: 18.5,  # ITG 12 ≈ Modern 18-19 (reduced from 19.0)
     }
 
     # Modern DDR maps directly (it's our reference scale)
