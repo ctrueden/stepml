@@ -25,6 +25,7 @@ from parsers.universal_parser import parse_chart_file
 from features.feature_extractor import FeatureExtractor
 from utils.data_structures import ChartData
 from utils.scale_detector import ScaleDetector
+from utils.performance_enrichment import PerformanceEnricher
 
 
 logging.basicConfig(
@@ -37,11 +38,22 @@ logger = logging.getLogger(__name__)
 class DatasetGenerator:
     """Generates ML-ready dataset from StepMania chart collection."""
 
-    def __init__(self, songs_dir: Path, output_dir: Path):
+    def __init__(self, songs_dir: Path, output_dir: Path, stats_file: Optional[Path] = None):
         self.songs_dir = Path(songs_dir)
         self.output_dir = Path(output_dir)
         self.feature_extractor = FeatureExtractor()
         self.scale_detector = ScaleDetector()
+
+        # Performance enrichment (optional)
+        self.performance_enricher = None
+        if stats_file and stats_file.exists():
+            logger.info(f"Loading player performance data from {stats_file}")
+            try:
+                self.performance_enricher = PerformanceEnricher(str(stats_file))
+                logger.info("✓ Performance enrichment enabled")
+            except Exception as e:
+                logger.warning(f"Failed to load Stats.xml: {e}")
+                logger.warning("Continuing without performance enrichment")
 
         # Statistics tracking
         self.stats = {
@@ -140,6 +152,15 @@ class DatasetGenerator:
                     'detected_scale': chart_data.detected_scale.value if chart_data.detected_scale else 'unknown',
                     'scale_confidence': chart_data.scale_confidence,
                 }
+
+                # Add performance features if enricher is available
+                if self.performance_enricher:
+                    perf_features = self.performance_enricher.get_performance_features(
+                        str(file_path.relative_to(self.songs_dir.parent)),
+                        chart.difficulty.value,
+                        chart.chart_type.value
+                    )
+                    row.update(perf_features)
 
                 rows.append(row)
 
@@ -300,6 +321,27 @@ class DatasetGenerator:
             for error in self.stats['errors'][:5]:
                 logger.info(f"    - {error}")
 
+        # Performance enrichment statistics
+        if self.performance_enricher:
+            enrichment_stats = self.performance_enricher.get_stats()
+            logger.info(f"\nPerformance Enrichment:")
+            logger.info(f"  Charts with performance data: {enrichment_stats['charts_with_performance_data']}")
+            logger.info(f"  Total charts processed: {enrichment_stats['total_charts_processed']}")
+            logger.info(f"  Match rate: {enrichment_stats['match_rate_percent']:.1f}%")
+            logger.info(f"  Songs in Stats.xml: {enrichment_stats['total_songs_in_stats']}")
+
+            # Show performance data stats from DataFrame
+            if not df.empty and 'has_performance_data' in df.columns:
+                charts_with_data = df['has_performance_data'].sum()
+                avg_plays = df[df['times_played'] > 0]['times_played'].mean() if any(df['times_played'] > 0) else 0
+                logger.info(f"  Average plays (played charts): {avg_plays:.1f}")
+
+                if 'best_accuracy' in df.columns:
+                    accuracy_data = df[df['best_accuracy'].notna()]
+                    if len(accuracy_data) > 0:
+                        logger.info(f"  Charts with accuracy data: {len(accuracy_data)}")
+                        logger.info(f"  Average best accuracy: {accuracy_data['best_accuracy'].mean():.2%}")
+
         logger.info("\n" + "=" * 60)
 
 
@@ -320,6 +362,17 @@ def main():
         help='Output directory for dataset files (default: ./data/processed)'
     )
     parser.add_argument(
+        '--stats-file',
+        type=Path,
+        default=Path(__file__).parent.parent / 'Save' / 'LocalProfiles' / '00000000' / 'Stats.xml',
+        help='Path to Stats.xml for performance enrichment (default: ../Save/LocalProfiles/00000000/Stats.xml)'
+    )
+    parser.add_argument(
+        '--no-performance',
+        action='store_true',
+        help='Disable performance data enrichment'
+    )
+    parser.add_argument(
         '--verbose',
         action='store_true',
         help='Show progress for every file'
@@ -332,8 +385,17 @@ def main():
         logger.error(f"Songs directory not found: {args.songs_dir}")
         sys.exit(1)
 
+    # Determine stats file (None if disabled or not found)
+    stats_file = None
+    if not args.no_performance:
+        if args.stats_file.exists():
+            stats_file = args.stats_file
+        else:
+            logger.warning(f"Stats.xml not found at {args.stats_file}")
+            logger.warning("Continuing without performance enrichment")
+
     # Generate dataset
-    generator = DatasetGenerator(args.songs_dir, args.output_dir)
+    generator = DatasetGenerator(args.songs_dir, args.output_dir, stats_file)
     df = generator.generate_dataset(verbose=args.verbose)
 
     if not df.empty:

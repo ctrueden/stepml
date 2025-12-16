@@ -44,7 +44,7 @@ class BaselineModel:
         self.model = None
         self.scaler = StandardScaler()
         self.feature_names = None
-        self.target_column = 'original_rating'  # Use original_rating for now
+        self.target_column = 'normalized_rating'  # Use normalized rating for consistent scale
 
         # Training metadata
         self.trained = False
@@ -85,13 +85,20 @@ class BaselineModel:
         # Select features
         if feature_columns is None:
             # Auto-detect numeric feature columns
-            # Exclude metadata and target columns
+            # Exclude metadata, target, and performance columns
             exclude_cols = {
+                # Metadata
                 'file_path', 'pack_name', 'file_format',
                 'title', 'artist', 'genre', 'credit',
                 'chart_type', 'difficulty',
                 'original_rating', 'normalized_rating',
-                'detected_scale', 'scale_confidence'
+                'detected_scale', 'scale_confidence',
+                # Performance features (sparse data, not intrinsic to chart)
+                'times_played', 'has_performance_data',
+                'best_accuracy', 'average_accuracy', 'consistency_score',
+                'best_percent_dp', 'best_max_combo', 'perceived_difficulty_factor',
+                'has_failed', 'perfect_rate', 'great_or_worse_rate', 'miss_rate',
+                'hold_success_rate', 'high_grade'
             }
             feature_columns = [
                 col for col in df.columns
