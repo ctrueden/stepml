@@ -30,7 +30,8 @@ class PlaylistGenerator:
         ratings_file: Path,
         courses_dir: Path,
         veto_file: Path = None,
-        favorites_file: Path = None,
+        favorites_single_file: Path = None,
+        favorites_double_file: Path = None,
     ):
         self.courses_dir = Path(courses_dir)
         self.courses_dir.mkdir(parents=True, exist_ok=True)
@@ -46,11 +47,16 @@ class PlaylistGenerator:
             self.veto_songs = self._load_song_list(veto_file)
             print(f"  Loaded {len(self.veto_songs)} vetoed songs")
 
-        # Load favorites list
-        self.favorites = set()
-        if favorites_file and favorites_file.exists():
-            self.favorites = self._load_song_list(favorites_file)
-            print(f"  Loaded {len(self.favorites)} favorite songs")
+        # Load favorites lists (separate for single and double)
+        self.favorites_single = set()
+        if favorites_single_file and favorites_single_file.exists():
+            self.favorites_single = self._load_song_list(favorites_single_file)
+            print(f"  Loaded {len(self.favorites_single)} single favorites")
+        
+        self.favorites_double = set()
+        if favorites_double_file and favorites_double_file.exists():
+            self.favorites_double = self._load_song_list(favorites_double_file)
+            print(f"  Loaded {len(self.favorites_double)} double favorites")
 
     def _load_song_list(self, filepath: Path) -> Set[Tuple[str, str]]:
         """Load a .songs file and extract (pack/song, difficulty) tuples."""
@@ -83,11 +89,19 @@ class PlaylistGenerator:
         difficulty = row["difficulty"].upper()
         return (normalized, difficulty) in self.veto_songs
 
-    def is_favorite(self, row: pd.Series) -> bool:
-        """Check if a chart is in favorites."""
+    def is_favorite(self, row: pd.Series, chart_type: str) -> bool:
+        """Check if a chart is in the appropriate favorites list."""
         normalized = self._normalize_path(row["file_path"])
         difficulty = row["difficulty"].upper()
-        return (normalized, difficulty) in self.favorites
+        
+        # Check the appropriate favorites list based on chart type
+        if chart_type == "dance-single":
+            return (normalized, difficulty) in self.favorites_single
+        elif chart_type == "dance-double":
+            return (normalized, difficulty) in self.favorites_double
+        else:
+            # For other chart types, not in either list
+            return False
 
     def generate_playlists(
         self,
@@ -131,8 +145,10 @@ class PlaylistGenerator:
         df_available = df_type[~df_type["is_vetoed"]].copy()
         print(f"  After veto filter: {len(df_available)} charts")
 
-        # Mark favorites
-        df_available.loc[:, "is_favorite"] = df_available.apply(self.is_favorite, axis=1)
+        # Mark favorites (pass chart_type so we check the right list)
+        df_available.loc[:, "is_favorite"] = df_available.apply(
+            lambda row: self.is_favorite(row, chart_type), axis=1
+        )
         print(f"  Favorites available: {df_available['is_favorite'].sum()}")
 
         for tier_name, min_rating, max_rating in tiers:
@@ -287,9 +303,14 @@ def main():
         help="Path to veto list",
     )
     parser.add_argument(
-        "--favorites",
+        "--favorites-single",
         type=Path,
-        help="Path to favorites list (optional)",
+        help="Path to single favorites list (optional)",
+    )
+    parser.add_argument(
+        "--favorites-double",
+        type=Path,
+        help="Path to double favorites list (optional)",
     )
     parser.add_argument(
         "--songs-per-tier",
@@ -316,7 +337,8 @@ def main():
         ratings_file=args.ratings,
         courses_dir=args.output,
         veto_file=args.veto if args.veto.exists() else None,
-        favorites_file=args.favorites if args.favorites and args.favorites.exists() else None,
+        favorites_single_file=args.favorites_single if args.favorites_single and args.favorites_single.exists() else None,
+        favorites_double_file=args.favorites_double if args.favorites_double and args.favorites_double.exists() else None,
     )
 
     # Generate playlists for each chart type
