@@ -31,6 +31,7 @@ class RatingNormalizer:
         9: 13.0,   # Classic 9 ≈ Modern 13
         10: 14.5,  # Classic 10 baseline (refined using metrics)
                    # Easy 10s (SAKURA): ~13, Hard 10s (PSMO): ~16
+        11: 16.0,  # Extended classic scale - extremely difficult
     }
 
     ITG_TO_UNIFIED = {

@@ -34,6 +34,8 @@ class ScaleDetector:
         r"CLUB\s+Version",
         r"LINK\s+Version",
         r"KOREA",
+        # Custom packs with classic scale
+        r"^Jun's\s+DDR",
     ]
 
     MODERN_DDR_PATTERNS = [
@@ -66,13 +68,13 @@ class ScaleDetector:
         self.modern_ddr_regex = [re.compile(p, re.IGNORECASE) for p in self.MODERN_DDR_PATTERNS]
         self.itg_regex = [re.compile(p, re.IGNORECASE) for p in self.ITG_PATTERNS]
 
-    def detect_scale(self, songpack_path: str, charts: Optional[List[NoteData]] = None) -> Tuple[ScaleType, float]:
+    def detect_scale(self, songpack_path: str, chart_data: Optional['ChartData'] = None) -> Tuple[ScaleType, float]:
         """
         Detect the rating scale type for a songpack.
 
         Args:
             songpack_path: Path to the songpack directory or chart file
-            charts: Optional list of chart data for statistical analysis
+            chart_data: Optional ChartData object for statistical analysis
 
         Returns:
             Tuple of (ScaleType, confidence_score)
@@ -111,8 +113,8 @@ class ScaleDetector:
 
         # Statistical analysis on ratings (if available)
         stats_detection = None
-        if charts:
-            stats_detection = self._detect_from_statistics(charts)
+        if chart_data:
+            stats_detection = self._detect_from_statistics(chart_data)
 
         # Combine detections
         return self._combine_detections(name_detection, stats_detection)
@@ -142,78 +144,85 @@ class ScaleDetector:
         # Unknown pack name
         return (None, 0.0)
 
-    def _detect_from_statistics(self, charts: List[NoteData]) -> Tuple[Optional[ScaleType], float]:
+    def _detect_from_statistics(self, chart_data: 'ChartData') -> Tuple[Optional[ScaleType], float]:
         """
-        Detect scale type from statistical analysis of chart ratings.
+        Detect scale type from statistical analysis of chart ratings and density.
 
-        Strategy: Use rating ranges to definitively identify modern DDR scales.
-        Classic DDR and ITG both used 1-10 range (ITG extended to 12), so ratings
-        above 10 are a clear signal of modern DDR (1-20 scale).
+        Strategy: Use NPS (notes per second) density to distinguish scales.
+        Modern DDR uses inflated ratings with lower density, while classic DDR
+        and ITG use higher density at the same rating level.
 
         Returns:
             Tuple of (ScaleType or None, confidence)
-            - Returns (MODERN_DDR, high_confidence) if max_rating > 10
-            - Returns (None, 0.0) if ambiguous (all ratings <= 10)
-              This signals fallback to path-based detection
+            - Returns (MODERN_DDR, high_confidence) if ratings suggest modern scale
+            - Returns (None, 0.0) if ambiguous (need path-based detection)
         """
-        if not charts:
+        if not chart_data or not chart_data.charts:
             return (None, 0.0)
 
-        # Extract all ratings and step counts
+        charts = chart_data.charts
         ratings = [chart.rating for chart in charts if chart.rating > 0]
         if not ratings:
             return (None, 0.0)
 
         max_rating = max(ratings)
-        min_rating = min(ratings)
-        avg_rating = sum(ratings) / len(ratings)
 
-        # Create rating-to-stepcount mapping for high-rated charts
-        high_rating_charts = [(chart.rating, chart.total_notes) for chart in charts
-                             if chart.rating >= 9 and chart.total_notes > 0]
+        # Calculate NPS for high-rated charts
+        # NPS = total_notes / song_length_seconds
+        # song_length_seconds = chart_length_beats / (bpm / 60)
+        def calc_nps(chart: 'NoteData') -> float:
+            if chart.total_notes == 0 or not chart_data.bpms:
+                return 0.0
+            # Use the first BPM as baseline (simplified)
+            base_bpm = chart_data.bpms[0].value if chart_data.bpms else 120.0
+            # Estimate song length from note positions
+            if chart.note_positions:
+                last_beat = max(pos[0] for pos in chart.note_positions)
+                song_length_seconds = (last_beat / base_bpm) * 60.0
+                return chart.total_notes / song_length_seconds if song_length_seconds > 0 else 0.0
+            return 0.0
 
-        # Clear modern DDR signal: classic DDR never went above 10
-        if max_rating > 10:
-            # The higher the max rating, the more confident we are
-            if max_rating > 15:
-                return (ScaleType.MODERN_DDR, 0.98)  # Very high confidence
-            elif max_rating > 12:
-                return (ScaleType.MODERN_DDR, 0.95)  # High confidence
-            else:  # 11-12 range
-                return (ScaleType.MODERN_DDR, 0.90)  # Still quite confident
+        # Very high ratings are definitive modern DDR signal
+        if max_rating > 15:
+            return (ScaleType.MODERN_DDR, 0.98)
+        elif max_rating > 12:
+            return (ScaleType.MODERN_DDR, 0.95)
+        
+        # For ratings 11-12: check NPS density to distinguish extended classic from modern
+        # Modern 11-12: typically ~3-4 NPS
+        # Classic extended 11-12: typically ~7-10+ NPS  
+        # ITG 11-12: also high density, ~6-12+ NPS
+        if max_rating in (11, 12):
+            high_rated = [c for c in charts if c.rating in (11, 12)]
+            if high_rated:
+                nps_values = [calc_nps(c) for c in high_rated]
+                nps_values = [n for n in nps_values if n > 0]  # Filter out invalid
+                if nps_values:
+                    avg_nps = sum(nps_values) / len(nps_values)
+                    # Modern 11-12s average ~3.5 NPS, classic/ITG average ~7+ NPS
+                    if avg_nps >= 6.0:
+                        # High NPS → likely classic DDR or ITG with extended ratings
+                        return (None, 0.0)  # Fall back to path hints
+                    elif avg_nps <= 4.5:
+                        # Low NPS → modern DDR inflation
+                        return (ScaleType.MODERN_DDR, 0.85)
+                    # In between: ambiguous, fall back to path
 
-        # All ratings <= 10: Use step count correlation to detect scale inflation
-        # Classic DDR: rating 10 = 500-700 steps (MAX 300, PARANOiA Survivor)
-        # Modern DDR: rating 10 = 250-400 steps (mid-difficulty)
-        #
-        # Key insight: Classic 9-10s are genuinely difficult with high step counts
-        #              Modern 9-10s are inflated ratings with moderate step counts
-
-        if high_rating_charts:
-            # Analyze the highest rated chart's step count
-            max_rated_chart = max(high_rating_charts, key=lambda x: x[0])
-            rating, step_count = max_rated_chart
-
-            # Classic DDR 10s typically have 500+ steps (MAX 300: ~600, PSMO: ~550)
-            # Modern DDR 10s typically have 200-400 steps
-            if rating == 10:
-                if step_count >= 500:
-                    # High step count for rating 10 → likely classic DDR
-                    return (None, 0.0)  # Fall back to path hints
-                elif step_count <= 400:
-                    # Low step count for rating 10 → modern DDR inflation
-                    return (ScaleType.MODERN_DDR, 0.85)
-                # In between (400-500): ambiguous, fall back to path
-
-            # Classic DDR 9s typically have 400+ steps
-            # Modern DDR 9s typically have 200-350 steps
-            elif rating == 9:
-                if step_count >= 450:
-                    # High step count → likely classic DDR
-                    return (None, 0.0)  # Fall back to path hints
-                elif step_count <= 350 and len(ratings) >= 4:
-                    # Low step count with full chart set → modern DDR
-                    return (ScaleType.MODERN_DDR, 0.75)
+        # For ratings 9-10: also check NPS to distinguish scales
+        # Classic 9: median ~5.5 NPS, Classic 10: median ~9 NPS
+        # Modern 9: lower density, Modern 10: much lower (~3-4 NPS)
+        if max_rating <= 10 and max_rating >= 9:
+            high_rated = [c for c in charts if c.rating in (9, 10)]
+            if high_rated:
+                nps_values = [calc_nps(c) for c in high_rated]
+                nps_values = [n for n in nps_values if n > 0]
+                if nps_values:
+                    max_nps = max(nps_values)
+                    # If highest rated chart has classic-level density
+                    if max_nps >= 7.0:  # Classic 9-10 territory
+                        return (None, 0.0)  # Ambiguous, use path
+                    elif max_nps <= 4.5:  # Modern 9-10 territory
+                        return (ScaleType.MODERN_DDR, 0.75)
 
         # No strong statistical signal - fall back to path-based detection
         return (None, 0.0)

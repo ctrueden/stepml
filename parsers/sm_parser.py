@@ -319,7 +319,7 @@ class SMParser:
         # Detect scale type
         detected_scale, confidence = self.scale_detector.detect_scale(
             chart_data.filepath,
-            chart_data.charts
+            chart_data
         )
 
         # Update chart data
