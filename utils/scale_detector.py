@@ -189,8 +189,8 @@ class ScaleDetector:
             return (ScaleType.MODERN_DDR, 0.95)
         
         # For ratings 11-12: check NPS density to distinguish extended classic from modern
-        # Modern 11-12: typically ~3-4 NPS
-        # Classic extended 11-12: typically ~7-10+ NPS  
+        # Modern 11-12: typically ~3-5 NPS (lower density, inflated ratings)
+        # Classic extended 11-12: typically ~7-15+ NPS (genuinely difficult)
         # ITG 11-12: also high density, ~6-12+ NPS
         if max_rating in (11, 12):
             high_rated = [c for c in charts if c.rating in (11, 12)]
@@ -199,14 +199,15 @@ class ScaleDetector:
                 nps_values = [n for n in nps_values if n > 0]  # Filter out invalid
                 if nps_values:
                     avg_nps = sum(nps_values) / len(nps_values)
-                    # Modern 11-12s average ~3.5 NPS, classic/ITG average ~7+ NPS
-                    if avg_nps >= 6.0:
+                    # Clear separation: modern 11-12s typically < 5.5 NPS
+                    # Classic/ITG 11-12s typically >= 6.5 NPS
+                    if avg_nps >= 6.5:
                         # High NPS → likely classic DDR or ITG with extended ratings
                         return (None, 0.0)  # Fall back to path hints
-                    elif avg_nps <= 4.5:
+                    elif avg_nps <= 5.5:
                         # Low NPS → modern DDR inflation
                         return (ScaleType.MODERN_DDR, 0.85)
-                    # In between: ambiguous, fall back to path
+                    # In between (5.5-6.5): ambiguous, fall back to path
 
         # For ratings 9-10: also check NPS to distinguish scales
         # Classic 9: median ~5.5 NPS, Classic 10: median ~9 NPS
