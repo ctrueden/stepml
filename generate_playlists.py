@@ -249,8 +249,9 @@ class PlaylistGenerator:
                     if line.startswith("#COURSE:"):
                         course_name = line
                     elif line.startswith("#SONG:"):
-                        # Strip comment if present
-                        song_line = line.split("#")[0].strip()
+                        # Strip trailing comment if present (e.g., "  # 12.5")
+                        # Split on "  #" to preserve the #SONG: prefix
+                        song_line = line.split("  #")[0].strip()
                         songs.append(song_line)
 
             if not songs or not course_name:
