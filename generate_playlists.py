@@ -17,7 +17,7 @@ import random
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Optional
 
 import pandas as pd
 
@@ -40,6 +40,9 @@ class PlaylistGenerator:
         print(f"Loading ratings from {ratings_file}...")
         self.df = pd.read_parquet(ratings_file)
         print(f"  Loaded {len(self.df)} charts")
+        
+        # Build index for fast song lookup
+        self._build_song_index()
 
         # Load veto list
         self.veto_songs = set()
@@ -58,11 +61,24 @@ class PlaylistGenerator:
             self.favorites_double = self._load_song_list(favorites_double_file)
             print(f"  Loaded {len(self.favorites_double)} double favorites")
 
+    def _build_song_index(self):
+        """Build an index of all (pack/song, difficulty) combinations for fast lookup."""
+        self.song_index = set()
+        for _, row in self.df.iterrows():
+            normalized = self._normalize_path(row["file_path"])
+            difficulty = row["difficulty"].upper()
+            self.song_index.add((normalized, difficulty))
+    
     def _load_song_list(self, filepath: Path) -> Set[Tuple[str, str]]:
-        """Load a .songs file and extract (pack/song, difficulty) tuples."""
+        """Load a .songs file and extract (pack/song, difficulty) tuples.
+        
+        Validates that all songs exist in the dataset and fails fast if not.
+        """
         songs = set()
+        errors = []
+        
         with open(filepath) as f:
-            for line in f:
+            for line_num, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line.startswith("#SONG:"):
                     continue
@@ -71,7 +87,75 @@ class PlaylistGenerator:
                 if match:
                     path, difficulty = match.groups()
                     songs.add((path, difficulty.upper()))
+                    
+                    # Validate that this song exists in our dataset
+                    normalized = self._normalize_path_from_songs_format(path)
+                    if not self._song_exists(normalized, difficulty.upper()):
+                        # Try to find similar songs to help user
+                        suggestion = self._find_similar_song(path, difficulty.upper())
+                        error_msg = f"  Line {line_num}: Song not found - {path}:{difficulty}"
+                        if suggestion:
+                            error_msg += f"\n    Did you mean: {suggestion[0]}:{suggestion[1]}?"
+                        errors.append(error_msg)
+                else:
+                    errors.append(f"  Line {line_num}: Malformed line - {line}")
+        
+        if errors:
+            print(f"\n❌ Errors in {filepath.name}:")
+            for error in errors:
+                print(error)
+            print("\nPlease fix these errors and try again.")
+            print("Tip: Check pack names match exactly (case-sensitive)")
+            raise ValueError(f"Invalid entries in {filepath.name}")
+        
         return songs
+    
+    def _normalize_path_from_songs_format(self, songs_path: str) -> str:
+        """Convert .songs format (Pack/Song) to match dataset format.
+        
+        Args:
+            songs_path: Path from .songs file, e.g., "DDR EXTREME/The Least 100sec"
+            
+        Returns:
+            Normalized path for matching, e.g., "DDR EXTREME/The Least 100sec"
+        """
+        return songs_path
+    
+    def _song_exists(self, pack_song: str, difficulty: str) -> bool:
+        """Check if a song with given difficulty exists in the dataset.
+        
+        Args:
+            pack_song: Pack/Song format, e.g., "DDR EXTREME/The Least 100sec"
+            difficulty: Difficulty name (uppercase), e.g., "HARD"
+            
+        Returns:
+            True if the song exists with that difficulty
+        """
+        return (pack_song, difficulty) in self.song_index
+    
+    def _find_similar_song(self, pack_song: str, difficulty: str) -> Optional[Tuple[str, str]]:
+        """Try to find a similar song to suggest as correction.
+        
+        Args:
+            pack_song: Pack/Song format that wasn't found
+            difficulty: Difficulty that wasn't found
+            
+        Returns:
+            Tuple of (corrected_path, corrected_difficulty) or None
+        """
+        song_name = pack_song.split('/')[-1] if '/' in pack_song else pack_song
+        
+        # Look for songs with matching name (case-insensitive) in any pack
+        for (indexed_path, indexed_diff) in self.song_index:
+            indexed_song = indexed_path.split('/')[-1] if '/' in indexed_path else indexed_path
+            if indexed_song.lower() == song_name.lower():
+                # Found a match! Check if difficulty exists, or suggest closest
+                if (indexed_path, difficulty) in self.song_index:
+                    return (indexed_path, difficulty)
+                elif (indexed_path, indexed_diff) in self.song_index:
+                    return (indexed_path, indexed_diff)
+        
+        return None
 
     def _normalize_path(self, file_path: str) -> str:
         """Normalize file path to match .songs format (PackName/SongName)."""
