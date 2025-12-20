@@ -384,17 +384,19 @@ def main():
     parser.add_argument(
         "--veto",
         type=Path,
-        default=Path.home() / "Games/StepMania/Courses/Workout/Veto.songs",
-        help="Path to veto list",
+        default=Path.home() / "Games/StepMania/Courses/Vetted/Veto.songs",
+        help="Path to veto list (optional)",
     )
     parser.add_argument(
         "--favorites-single",
         type=Path,
+        default=Path.home() / "Games/StepMania/Courses/Vetted/Favorites.songs",
         help="Path to single favorites list (optional)",
     )
     parser.add_argument(
         "--favorites-double",
         type=Path,
+        default=Path.home() / "Games/StepMania/Courses/Vetted/Double-Favorites.songs",
         help="Path to double favorites list (optional)",
     )
     parser.add_argument(
