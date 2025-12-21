@@ -1,5 +1,4 @@
 *.log
-/__pycache__/
 /data/
 /uv.lock
 __pycache__/
