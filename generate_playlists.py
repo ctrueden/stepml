@@ -288,11 +288,12 @@ class PlaylistGenerator:
         selected = selected.sort_values("calculated_rating")
 
         # Generate .songs file
-        prefix = "Double-" if chart_type == "dance-double" else ""
-        output_file = self.courses_dir / f"{prefix}{tier_name}.songs"
+        style = "Double" if chart_type == "dance-double" else "Single"
+        avg_rating = round((min_rating + max_rating) / 2)
+        output_file = self.courses_dir / f"{style}-{avg_rating:02d}-{tier_name.upper()}.songs"
 
         with open(output_file, "w") as f:
-            f.write(f"#COURSE:{tier_name} ({min_rating:.1f}-{max_rating:.1f});\n")
+            f.write(f"#COURSE:[Workout] Random {style}-{avg_rating:02d}-{tier_name.upper()};\n")
             for _, row in selected.iterrows():
                 normalized = self._normalize_path(row["file_path"])
                 difficulty = row["difficulty"].upper()
@@ -312,7 +313,7 @@ class PlaylistGenerator:
 
     def generate_random_courses(self, course_length: int = 4, num_variants: int = 5):
         """
-        Generate random courses from each playlist (like randomize.sh).
+        Generate random courses from each playlist.
 
         Args:
             course_length: Number of songs per course
