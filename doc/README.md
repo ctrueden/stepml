@@ -38,19 +38,19 @@ This directory contains the specification and documentation for the ML-based Ste
 ## Project Structure
 
 ```
-/home/curtis/Games/StepMania/
+~/Games/StepMania/
 ├── stepchart-reclassify/                  # Main implementation
 │   ├── parsers/                           # Multi-format parsers
 │   ├── features/                          # Feature extraction
 │   ├── utils/                             # Data structures & utilities
 │   ├── models/                            # Trained ML models
 │   ├── data/                              # Datasets & output
+│   ├── doc/                               # ← Documentation
 │   ├── tests/                             # Test suite
 │   ├── notebooks/                         # Analysis notebooks
 │   ├── generate_dataset.py                # Dataset generation
 │   ├── train_baseline_models.py           # Model training
-│   ├── example_ml_usage.py                # ML inference examples
-│   └── spec/                              # ← Documentation
+│   └── example_ml_usage.py                # ML inference examples
 │
 ├── Songs/                                 # Song collection (102 packs, 4,334 charts)
 └── Save/LocalProfiles/00000000/Stats.xml  # Player performance history
@@ -60,7 +60,7 @@ This directory contains the specification and documentation for the ML-based Ste
 
 ### Generating Predictions
 ```bash
-cd /home/curtis/Games/StepMania/stepchart-reclassify
+cd ~/Games/StepMania/stepchart-reclassify
 
 # Generate difficulty prediction for a chart
 uv run python example_ml_usage.py "../Songs/StepMania 5/Goin' Under/Goin' Under.sm"
@@ -150,5 +150,5 @@ Key packages:
 ---
 
 **Last Updated**: 2025-11-24
-**Project Location**: `/home/curtis/Games/StepMania/`
+**Project Location**: `~/Games/StepMania/`
 **Status**: ✅ All 4 Phases Complete

@@ -16,7 +16,7 @@ Your collection contains all three major formats:
 
 ### Phase 1: Core Parser (Week 1-2) ✅ COMPLETE
 **Status**: Completed 2025-10-15
-**Location**: `/home/curtis/Games/StepMania/stepchart-reclassify/`
+**Location**: `~/Games/StepMania/stepchart-reclassify/`
 
 **Implemented**:
 1. ✅ `.sm` parser - fully functional with comprehensive metadata extraction
@@ -213,7 +213,7 @@ uv run python3 example_usage.py <path>  # See usage examples
 ### Documentation
 - `stepchart-reclassify/PHASE1_COMPLETE.md` - Detailed phase 1 summary
 - `stepchart-reclassify/example_usage.py` - Practical usage examples
-- `spec/ml_step_chart_analysis.md` - Complete technical specification
+- `doc/ml_step_chart_analysis.md` - Complete technical specification
 
 ## Project Status Summary
 

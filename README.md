@@ -5,4 +5,4 @@ difficulty ratings across all songs. The system extracts meaningful features fro
 .sm, .ssc, and .dwi files and use them to train models for accurate difficulty
 prediction and rating standardization across multiple historical rating scales.
 
-For details, see documentation in the `spec` directory.
+For details, see documentation in the `doc` directory.

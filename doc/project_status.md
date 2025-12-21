@@ -14,7 +14,7 @@ Machine learning-based system for analyzing StepMania step charts and providing 
 ### ✅ Phase 1: Core Parser and Feature Extraction (COMPLETE)
 
 **Duration**: 1 session (2025-10-15)
-**Location**: `/home/curtis/Games/StepMania/stepchart-reclassify/`
+**Location**: `~/Games/StepMania/stepchart-reclassify/`
 **Status**: Fully implemented and tested
 
 #### Deliverables
@@ -177,7 +177,7 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
    - ✅ Format checking utilities
    - ✅ Unified output across all formats
 
-4. **Format Documentation** (`spec/file_formats.md`)
+4. **Format Documentation** (`doc/file_formats.md`)
    - ✅ Complete format reference
    - ✅ Encoding specifications
    - ✅ Parsing strategy documentation
@@ -298,7 +298,7 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
 ## File Structure
 
 ```
-/home/curtis/Games/StepMania/
+~/Games/StepMania/
 ├── stepchart-reclassify/           # Main implementation
 │   ├── parsers/                    # ✅ Phase 1
 │   │   ├── __init__.py
@@ -316,15 +316,15 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
 │   │   └── experiments/
 │   ├── notebooks/                  # 📋 Phase 3-4
 │   ├── tests/                      # Testing
-│   ├── test_parser.py             # ✅ Phase 1
-│   ├── example_usage.py           # ✅ Phase 1
-│   ├── PHASE1_COMPLETE.md         # ✅ Documentation
-│   ├── pyproject.toml             # ✅ uv config
-│   └── uv.lock                    # ✅ Dependencies
-├── spec/                           # Documentation
-│   ├── ml_step_chart_analysis.md  # Main specification
-│   ├── implementation_notes.md    # Updated with Phase 1
-│   └── PROJECT_STATUS.md          # This file
+│   ├── test_parser.py              # ✅ Phase 1
+│   ├── example_usage.py            # ✅ Phase 1
+│   ├── PHASE1_COMPLETE.md          # ✅ Documentation
+│   ├── pyproject.toml              # ✅ uv config
+│   └── uv.lock                     # ✅ Dependencies
+├── doc/                            # Documentation
+│   ├── ml_step_chart_analysis.md   # Main specification
+│   ├── implementation_notes.md     # Updated with Phase 1
+│   └── PROJECT_STATUS.md           # This file
 └── Songs/                          # Song collection (102 packs)
 ```
 
@@ -335,7 +335,7 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
 ### Running the System
 
 ```bash
-cd /home/curtis/Games/StepMania/stepchart-reclassify
+cd ~/Games/StepMania/stepchart-reclassify
 
 # Test parser on sample files
 uv run python3 test_parser.py
@@ -385,11 +385,11 @@ for chart in chart_data.charts:
 
 ## Resources
 
-- **Main Spec**: `spec/ml_step_chart_analysis.md`
-- **Implementation Notes**: `spec/implementation_notes.md`
-- **Phase 1 Summary**: `spec/phase1.md` / `PHASE1_COMPLETE.md`
-- **Phase 2 Summary**: `spec/PHASE2_COMPLETE.md`
-- **Phase 3 Summary**: `spec/PHASE3_COMPLETE.md`
+- **Main Spec**: `doc/ml_step_chart_analysis.md`
+- **Implementation Notes**: `doc/implementation_notes.md`
+- **Phase 1 Summary**: `doc/phase1.md` / `PHASE1_COMPLETE.md`
+- **Phase 2 Summary**: `doc/PHASE2_COMPLETE.md`
+- **Phase 3 Summary**: `doc/PHASE3_COMPLETE.md`
 - **Examples**:
   - `example_usage.py` (Phase 1 - parsing & features)
   - `example_scale_detection.py` (Phase 2 - scale detection)
