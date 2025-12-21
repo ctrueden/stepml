@@ -12,6 +12,8 @@ import re
 from pathlib import Path
 from typing import Set, Tuple
 
+from .config import get_courses_dir, get_profile_dir
+
 
 def parse_song_from_course(line: str) -> str | None:
     """Extract song path from #SONG: line in course file."""
@@ -101,8 +103,21 @@ def write_unsorted_favorites(output_path: Path, songs: Set[str]) -> None:
 
 
 def main():
-    courses_dir = Path.home() / 'Games/StepMania/Courses/Vetted'
-    profile_dir = Path.home() / 'Games/StepMania/Save/LocalProfiles/00000000'
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description="Sync StepMania in-game favorites with curated course playlists"
+    )
+    parser.add_argument(
+        "--profile",
+        type=int,
+        default=0,
+        help="Profile number (default: 0)",
+    )
+    args = parser.parse_args()
+    
+    courses_dir = get_courses_dir() / 'Vetted'
+    profile_dir = get_profile_dir(args.profile)
     
     single_course = courses_dir / 'Single-Favorites.songs'
     double_course = courses_dir / 'Double-Favorites.songs'

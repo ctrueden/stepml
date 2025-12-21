@@ -5,11 +5,13 @@ Shows how to use the universal parser to process .sm, .ssc, and .dwi files
 with automatic format detection.
 """
 from pathlib import Path
+import os
 import sys
-sys.path.append(str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from parsers.universal_parser import parse_chart_file, detect_format, is_supported_format
-from features.feature_extractor import FeatureExtractor
+from stepml.parsers.universal_parser import parse_chart_file, detect_format, is_supported_format
+from stepml.features.feature_extractor import FeatureExtractor
+from stepml.config import get_songs_dir
 
 
 def example_1_basic_parsing():
@@ -19,20 +21,25 @@ def example_1_basic_parsing():
     print("=" * 80)
     print()
 
+    songs_dir = get_songs_dir()
     files = [
-        "/home/curtis/Games/StepMania/Songs/StepMania 5/Goin' Under/Goin' Under.sm",
-        "/home/curtis/Games/StepMania/Songs/StepMania 5/Goin' Under/Goin' Under.ssc",
-        "/home/curtis/Games/StepMania/Songs/DDR GB 2/PARANOiA Rebirth/PARANOiA Rebirth.dwi",
+        songs_dir / "StepMania 5/Goin' Under/Goin' Under.sm",
+        songs_dir / "StepMania 5/Goin' Under/Goin' Under.ssc",
+        songs_dir / "DDR GB 2/PARANOiA Rebirth/PARANOiA Rebirth.dwi",
     ]
 
     for filepath in files:
+        if not filepath.exists():
+            print(f"⚠ File not found: {filepath}")
+            continue
+
         # Detect format
-        format_name = detect_format(filepath)
-        print(f"File: {Path(filepath).name}")
+        format_name = detect_format(str(filepath))
+        print(f"File: {filepath.name}")
         print(f"Format: {format_name}")
 
         # Parse with universal parser
-        chart = parse_chart_file(filepath)
+        chart = parse_chart_file(str(filepath))
         print(f"Title: {chart.title}")
         print(f"Artist: {chart.artist}")
         print(f"Charts: {len(chart.charts)}")
@@ -69,7 +76,7 @@ def example_3_batch_processing():
     print("=" * 80)
     print()
 
-    songs_dir = Path("/home/curtis/Games/StepMania/Songs")
+    songs_dir = get_songs_dir()
 
     # Find all supported chart files
     chart_files = []
@@ -96,7 +103,7 @@ def example_3_batch_processing():
         if not filepath.exists():
             continue
 
-        chart = parse_chart_file(filepath)
+        chart = parse_chart_file(str(filepath))
         print(f"{chart.title} ({chart.format})")
         print(f"  Songpack: {chart.songpack}")
         print(f"  Scale: {chart.detected_scale.value} ({chart.scale_confidence:.0%} confidence)")
@@ -112,18 +119,22 @@ def example_4_feature_extraction():
     print()
 
     extractor = FeatureExtractor()
+    songs_dir = get_songs_dir()
 
     files = [
-        ("/home/curtis/Games/StepMania/Songs/StepMania 5/Goin' Under/Goin' Under.sm", "StepMania"),
-        ("/home/curtis/Games/StepMania/Songs/StepMania 5/Goin' Under/Goin' Under.ssc", "StepMania 5"),
-        ("/home/curtis/Games/StepMania/Songs/DDR GB 2/PARANOiA Rebirth/PARANOiA Rebirth.dwi", "DWI"),
+        (songs_dir / "StepMania 5/Goin' Under/Goin' Under.sm", "StepMania"),
+        (songs_dir / "StepMania 5/Goin' Under/Goin' Under.ssc", "StepMania 5"),
+        (songs_dir / "DDR GB 2/PARANOiA Rebirth/PARANOiA Rebirth.dwi", "DWI"),
     ]
 
     for filepath, format_name in files:
+        if not filepath.exists():
+            continue
+
         print(f"Format: {format_name}")
         print("-" * 40)
 
-        chart_data = parse_chart_file(filepath)
+        chart_data = parse_chart_file(str(filepath))
 
         # Extract features for hardest chart
         hardest_chart = max(chart_data.charts, key=lambda c: c.rating)
@@ -145,13 +156,18 @@ def example_5_cross_format_comparison():
     print("=" * 80)
     print()
 
+    songs_dir = get_songs_dir()
+
     # Parse same song in both .sm and .ssc formats
-    sm_chart = parse_chart_file(
-        "/home/curtis/Games/StepMania/Songs/StepMania 5/Goin' Under/Goin' Under.sm"
-    )
-    ssc_chart = parse_chart_file(
-        "/home/curtis/Games/StepMania/Songs/StepMania 5/Goin' Under/Goin' Under.ssc"
-    )
+    sm_path = songs_dir / "StepMania 5/Goin' Under/Goin' Under.sm"
+    ssc_path = songs_dir / "StepMania 5/Goin' Under/Goin' Under.ssc"
+
+    if not sm_path.exists() or not ssc_path.exists():
+        print("⚠ Required files not found")
+        return
+
+    sm_chart = parse_chart_file(str(sm_path))
+    ssc_chart = parse_chart_file(str(ssc_path))
 
     print(f"Song: {sm_chart.title}")
     print()
@@ -191,19 +207,19 @@ def example_6_unified_workflow():
     print("=" * 80)
     print()
 
-    def process_any_chart(filepath: str):
+    def process_any_chart(filepath: Path):
         """Process any supported chart file with a unified workflow."""
         # Check if supported
-        if not is_supported_format(filepath):
+        if not is_supported_format(str(filepath)):
             print(f"⚠ Unsupported format: {filepath}")
             return
 
         # Parse (auto-detects format)
-        chart_data = parse_chart_file(filepath)
+        chart_data = parse_chart_file(str(filepath))
 
         # Process
         print(f"✓ {chart_data.title} by {chart_data.artist}")
-        print(f"  Format: {detect_format(filepath)}")
+        print(f"  Format: {detect_format(str(filepath))}")
         print(f"  Songpack: {chart_data.songpack}")
         print(f"  Scale: {chart_data.detected_scale.value}")
 
@@ -220,13 +236,14 @@ def example_6_unified_workflow():
         print()
 
     # Process files of different formats with same workflow
+    songs_dir = get_songs_dir()
     files = [
-        "/home/curtis/Games/StepMania/Songs/StepMania 5/Goin' Under/Goin' Under.sm",
-        "/home/curtis/Games/StepMania/Songs/DDR GB 2/PARANOiA Rebirth/PARANOiA Rebirth.dwi",
+        songs_dir / "StepMania 5/Goin' Under/Goin' Under.sm",
+        songs_dir / "DDR GB 2/PARANOiA Rebirth/PARANOiA Rebirth.dwi",
     ]
 
     for filepath in files:
-        if Path(filepath).exists():
+        if filepath.exists():
             process_any_chart(filepath)
 
 

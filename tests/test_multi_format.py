@@ -18,10 +18,11 @@ from stepml.parsers.universal_parser import (
     UniversalParser
 )
 from stepml.utils.data_structures import ChartType, DifficultyType
+from stepml.config import get_songs_dir
 
 
 # Test file paths
-SONGS_DIR = Path("/home/curtis/Games/StepMania/Songs")
+SONGS_DIR = get_songs_dir()
 SM_FILE = SONGS_DIR / "StepMania 5/Goin' Under/Goin' Under.sm"
 SSC_FILE = SONGS_DIR / "StepMania 5/Goin' Under/Goin' Under.ssc"
 DWI_FILE = SONGS_DIR / "DDR GB 2/PARANOiA Rebirth/PARANOiA Rebirth.dwi"

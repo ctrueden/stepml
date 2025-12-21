@@ -20,6 +20,8 @@ from typing import Dict, List, Set, Tuple, Optional
 
 import pandas as pd
 
+from .config import get_courses_dir
+
 
 class PlaylistGenerator:
     """Generate difficulty-based playlists from calculated ratings."""
@@ -378,25 +380,25 @@ def main():
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path.home() / "Games/StepMania/Courses/Workout",
+        default=get_courses_dir() / "Workout",
         help="Output directory for playlists",
     )
     parser.add_argument(
         "--veto",
         type=Path,
-        default=Path.home() / "Games/StepMania/Courses/Vetted/Veto.songs",
+        default=get_courses_dir() / "Vetted/Veto.songs",
         help="Path to veto list (optional)",
     )
     parser.add_argument(
         "--favorites-single",
         type=Path,
-        default=Path.home() / "Games/StepMania/Courses/Vetted/Favorites.songs",
+        default=get_courses_dir() / "Vetted/Favorites.songs",
         help="Path to single favorites list (optional)",
     )
     parser.add_argument(
         "--favorites-double",
         type=Path,
-        default=Path.home() / "Games/StepMania/Courses/Vetted/Double-Favorites.songs",
+        default=get_courses_dir() / "Vetted/Double-Favorites.songs",
         help="Path to double favorites list (optional)",
     )
     parser.add_argument(

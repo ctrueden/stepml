@@ -92,6 +92,22 @@ uv run analyze-performance
 uv run generate-baseline
 ```
 
+### Configuration
+
+By default, scripts expect your StepMania installation in `~/Games/StepMania/`.
+If you have StepMania installed elsewhere, set the `STEPMANIA_HOME` environment variable:
+
+```bash
+# Use a custom StepMania installation directory
+export STEPMANIA_HOME=/opt/stepmania
+uv run generate-dataset
+
+# Or set it per-command
+STEPMANIA_HOME=/path/to/stepmania uv run generate-playlists
+```
+
+All scripts and examples respect this setting, allowing you to work with multiple StepMania installations.
+
 ### Usage Examples
 
 ```bash

@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from stepml.utils.scale_detector import ScaleDetector
 from stepml.utils.rating_normalizer import RatingNormalizer
 from stepml.utils.data_structures import ScaleType, NoteData, DifficultyType, ChartType, ChartData
+from stepml.config import get_songs_dir
 
 
 class TestScaleDetector:
@@ -251,7 +252,7 @@ class TestScaleDetectionIntegration:
 
     @pytest.fixture
     def songs_dir(self):
-        return Path("/home/curtis/Games/StepMania/Songs")
+        return get_songs_dir()
 
     def test_real_classic_ddr_packs(self, detector, songs_dir):
         """Test detection on real Classic DDR packs."""

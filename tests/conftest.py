@@ -14,12 +14,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from stepml.parsers.sm_parser import parse_sm_file
 from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
 from stepml.utils.data_structures import ChartData, NoteData
+from stepml.config import get_songs_dir
 
 
 @pytest.fixture(scope="session")
 def songs_dir() -> Path:
     """Path to the Songs directory."""
-    return Path(__file__).parent.parent.parent / "Songs"
+    return get_songs_dir()
 
 
 @pytest.fixture(scope="session")

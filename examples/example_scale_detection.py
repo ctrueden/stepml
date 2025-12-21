@@ -5,10 +5,15 @@ Demonstrates automatic scale detection and rating normalization across
 different StepMania song packs (Classic DDR, Modern DDR, ITG).
 """
 from pathlib import Path
-from parsers.sm_parser import parse_sm_file
-from utils.scale_detector import ScaleDetector
-from utils.rating_normalizer import RatingNormalizer
-from utils.data_structures import ScaleType
+import os
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from stepml.parsers.sm_parser import parse_sm_file
+from stepml.utils.scale_detector import ScaleDetector
+from stepml.utils.rating_normalizer import RatingNormalizer
+from stepml.utils.data_structures import ScaleType
+from stepml.config import get_songs_dir
 
 
 def example_basic_usage():
@@ -18,11 +23,11 @@ def example_basic_usage():
     print("=" * 80)
     print()
 
-    # Parse a Classic DDR chart
-    chart_path = "/home/curtis/Games/StepMania/Songs/DDR EXTREME/PARANOiA survivor/PARANOiA survivor.sm"
+    songs_dir = get_songs_dir()
+    chart_path = songs_dir / "DDR EXTREME/PARANOiA survivor/PARANOiA survivor.sm"
 
-    if Path(chart_path).exists():
-        chart_data = parse_sm_file(chart_path)
+    if chart_path.exists():
+        chart_data = parse_sm_file(str(chart_path))
 
         print(f"Song: {chart_data.title}")
         print(f"Pack: {chart_data.songpack}")
@@ -35,6 +40,8 @@ def example_basic_usage():
             difficulty_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
             normalized = chart_data.normalized_ratings.get(difficulty_key, 0)
             print(f"  {chart.difficulty.value:10s}: {chart.rating:2d} → {normalized:.1f}")
+    else:
+        print(f"⚠ Chart file not found: {chart_path}")
     print()
 
 
@@ -143,7 +150,7 @@ def example_batch_processing():
     print("=" * 80)
     print()
 
-    songs_dir = Path("/home/curtis/Games/StepMania/Songs")
+    songs_dir = get_songs_dir()
 
     # Process a few packs
     packs = ["DDR 1st Mix", "DDR A20", "ITG"]
