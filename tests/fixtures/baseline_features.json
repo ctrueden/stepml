@@ -1,6 +1,6 @@
 {
   "_comment": "Baseline feature extractions for regression testing",
-  "_generated": "2025-11-20T14:55:11.084000",
+  "_generated": "2025-12-20T20:41:04.152657",
   "_version": "1.0.0",
   "_instructions": "Do not edit manually. Regenerate with: uv run python scripts/generate_baseline.py",
   "baseline_data": {
@@ -37,7 +37,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 10.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -63,7 +63,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 8.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -89,7 +89,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 6.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -115,7 +115,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 3.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -141,7 +141,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 1.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -167,7 +167,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 11.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -193,7 +193,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 9.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -219,7 +219,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 6.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -245,7 +245,7 @@
           "chart_length_seconds": 118.85714285714286,
           "chart_length_beats": 416.0,
           "original_rating": 3.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.85,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -288,7 +288,7 @@
           "chart_length_seconds": 126.12929116846838,
           "chart_length_beats": 358.0,
           "original_rating": 3.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -314,7 +314,7 @@
           "chart_length_seconds": 126.12929116846838,
           "chart_length_beats": 358.0,
           "original_rating": 7.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -340,7 +340,7 @@
           "chart_length_seconds": 126.12929116846838,
           "chart_length_beats": 358.0,
           "original_rating": 12.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -366,7 +366,7 @@
           "chart_length_seconds": 126.12929116846838,
           "chart_length_beats": 358.0,
           "original_rating": 16.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -392,7 +392,7 @@
           "chart_length_seconds": 126.12929116846838,
           "chart_length_beats": 358.0,
           "original_rating": 7.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -418,7 +418,7 @@
           "chart_length_seconds": 126.12929116846838,
           "chart_length_beats": 358.0,
           "original_rating": 12.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -444,7 +444,7 @@
           "chart_length_seconds": 126.12929116846838,
           "chart_length_beats": 358.0,
           "original_rating": 16.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -486,7 +486,7 @@
           "chart_length_seconds": 112.68820567467034,
           "chart_length_beats": 264.0,
           "original_rating": 3.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -512,7 +512,7 @@
           "chart_length_seconds": 113.06307681271664,
           "chart_length_beats": 265.0,
           "original_rating": 6.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -538,7 +538,7 @@
           "chart_length_seconds": 113.06307681271664,
           "chart_length_beats": 265.0,
           "original_rating": 9.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -564,7 +564,7 @@
           "chart_length_seconds": 113.06307681271664,
           "chart_length_beats": 265.0,
           "original_rating": 13.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -590,7 +590,7 @@
           "chart_length_seconds": 113.06307681271664,
           "chart_length_beats": 265.0,
           "original_rating": 16.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -616,7 +616,7 @@
           "chart_length_seconds": 113.06307681271664,
           "chart_length_beats": 265.0,
           "original_rating": 7.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -642,7 +642,7 @@
           "chart_length_seconds": 113.06307681271664,
           "chart_length_beats": 265.0,
           "original_rating": 10.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -668,7 +668,7 @@
           "chart_length_seconds": 113.06307681271664,
           "chart_length_beats": 265.0,
           "original_rating": 13.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -694,7 +694,7 @@
           "chart_length_seconds": 113.06307681271664,
           "chart_length_beats": 265.0,
           "original_rating": 16.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -736,7 +736,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 8.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -762,7 +762,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 11.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -788,7 +788,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 14.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -814,7 +814,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 17.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -840,7 +840,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 18.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -866,7 +866,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 11.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -892,7 +892,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 14.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -918,7 +918,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 17.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -944,7 +944,7 @@
           "chart_length_seconds": 123.39336635650159,
           "chart_length_beats": 664.0,
           "original_rating": 18.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -986,7 +986,7 @@
           "chart_length_seconds": 101.19225373124853,
           "chart_length_beats": 286.5,
           "original_rating": 4.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1012,7 +1012,7 @@
           "chart_length_seconds": 101.19225373124853,
           "chart_length_beats": 286.5,
           "original_rating": 9.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1038,7 +1038,7 @@
           "chart_length_seconds": 101.19225373124853,
           "chart_length_beats": 286.5,
           "original_rating": 12.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1064,7 +1064,7 @@
           "chart_length_seconds": 101.19225373124853,
           "chart_length_beats": 286.5,
           "original_rating": 15.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1090,7 +1090,7 @@
           "chart_length_seconds": 101.19225373124853,
           "chart_length_beats": 286.5,
           "original_rating": 9.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1116,7 +1116,7 @@
           "chart_length_seconds": 101.19225373124853,
           "chart_length_beats": 286.5,
           "original_rating": 12.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1142,7 +1142,7 @@
           "chart_length_seconds": 101.19225373124853,
           "chart_length_beats": 286.5,
           "original_rating": 16.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1184,7 +1184,7 @@
           "chart_length_seconds": 115.125,
           "chart_length_beats": 283.0,
           "original_rating": 3.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1210,7 +1210,7 @@
           "chart_length_seconds": 115.125,
           "chart_length_beats": 283.0,
           "original_rating": 7.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1236,7 +1236,7 @@
           "chart_length_seconds": 115.375,
           "chart_length_beats": 283.6666666666667,
           "original_rating": 11.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1262,7 +1262,7 @@
           "chart_length_seconds": 115.375,
           "chart_length_beats": 283.6666666666667,
           "original_rating": 15.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1288,7 +1288,7 @@
           "chart_length_seconds": 115.375,
           "chart_length_beats": 283.6666666666667,
           "original_rating": 17.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1314,7 +1314,7 @@
           "chart_length_seconds": 115.125,
           "chart_length_beats": 283.0,
           "original_rating": 7.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1340,7 +1340,7 @@
           "chart_length_seconds": 115.375,
           "chart_length_beats": 283.6666666666667,
           "original_rating": 11.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1366,7 +1366,7 @@
           "chart_length_seconds": 115.375,
           "chart_length_beats": 283.6666666666667,
           "original_rating": 15.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1392,7 +1392,7 @@
           "chart_length_seconds": 115.375,
           "chart_length_beats": 283.6666666666667,
           "original_rating": 17.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1434,7 +1434,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 4.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1460,7 +1460,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 7.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1486,7 +1486,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 11.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1512,7 +1512,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 15.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1538,7 +1538,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 16.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1564,7 +1564,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 7.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1590,7 +1590,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 11.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1616,7 +1616,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 15.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1642,7 +1642,7 @@
           "chart_length_seconds": 98.24711964610313,
           "chart_length_beats": 262.0,
           "original_rating": 15.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -1683,7 +1683,7 @@
           "chart_length_seconds": 239.43396226415095,
           "chart_length_beats": 423.0,
           "original_rating": 1.0,
-          "scale_confidence": 0.4,
+          "scale_confidence": 0.0,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1709,7 +1709,7 @@
           "chart_length_seconds": 17.660377358490567,
           "chart_length_beats": 31.2,
           "original_rating": 1.0,
-          "scale_confidence": 0.4,
+          "scale_confidence": 0.0,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1949,7 +1949,7 @@
           "chart_length_seconds": 111.08571428571429,
           "chart_length_beats": 324.0,
           "original_rating": 3.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -1975,7 +1975,7 @@
           "chart_length_seconds": 111.08571428571429,
           "chart_length_beats": 324.0,
           "original_rating": 6.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -2001,7 +2001,7 @@
           "chart_length_seconds": 111.08571428571429,
           "chart_length_beats": 324.0,
           "original_rating": 8.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -2027,7 +2027,7 @@
           "chart_length_seconds": 111.08571428571429,
           "chart_length_beats": 324.0,
           "original_rating": 14.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -2053,7 +2053,7 @@
           "chart_length_seconds": 111.08571428571429,
           "chart_length_beats": 324.0,
           "original_rating": 6.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -2079,7 +2079,7 @@
           "chart_length_seconds": 111.08571428571429,
           "chart_length_beats": 324.0,
           "original_rating": 8.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -2105,7 +2105,7 @@
           "chart_length_seconds": 111.08571428571429,
           "chart_length_beats": 324.0,
           "original_rating": 14.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.9500000000000001,
           "normalized_rating": 0.0,
           "has_advanced_timing": 0.0,
           "advanced_features": {
@@ -2148,7 +2148,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 6.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2174,7 +2174,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 8.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2200,7 +2200,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 12.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2226,7 +2226,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 14.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2252,7 +2252,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 16.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2278,7 +2278,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 9.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2304,7 +2304,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 12.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2330,7 +2330,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 14.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2356,7 +2356,7 @@
           "chart_length_seconds": 66.33229702246736,
           "chart_length_beats": 175.9375,
           "original_rating": 15.0,
-          "scale_confidence": 0.9,
+          "scale_confidence": 0.98,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2399,7 +2399,7 @@
           "chart_length_seconds": 48.38709677419355,
           "chart_length_beats": 149.25,
           "original_rating": 9.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.9,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2425,7 +2425,7 @@
           "chart_length_seconds": 47.032258064516135,
           "chart_length_beats": 146.0,
           "original_rating": 11.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.9,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2451,7 +2451,7 @@
           "chart_length_seconds": 47.032258064516135,
           "chart_length_beats": 146.0,
           "original_rating": 6.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.9,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
@@ -2477,7 +2477,7 @@
           "chart_length_seconds": 47.032258064516135,
           "chart_length_beats": 146.0,
           "original_rating": 3.0,
-          "scale_confidence": 0.5,
+          "scale_confidence": 0.9,
           "normalized_rating": 0.0,
           "has_advanced_timing": 1.0,
           "advanced_features": {
