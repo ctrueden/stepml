@@ -10,7 +10,26 @@ It was vibe-coded using Claude Sonnet and Haiku 4.5 models, with human guidance
 at important points along the way. The result is a system to produce
 consistently scaled ratings across all stepcharts in your collection.
 
+## Quick start
+
+* Download the calculated ratings the
+  [Releases](https://github.com/ctrueden/stepml/releases) page.
+
+* Clone my [fork of itgmania](https://github.com/ctrueden/itgmania)
+  and build it from source.
+
+* Unzip the downloaded `calculated_ratings-YYYYMMDD.zip` in the itgmania
+  working copy's `Data` folder.
+
+Now, when you launch itgmania with the built binary, it should pick up
+the `calculated_ratings.json` values and prefer them to the stepchart ones.
+If not, double check that songpack folder names match the ones used in the
+`calculated_ratings.json` file.
+
 ## Available entry points
+
+If you want to play around with rerunning the training and data generation
+on your own collection of songpacks, you can use these commands:
 
 | Command                    | Purpose                                |
 |----------------------------|----------------------------------------|
