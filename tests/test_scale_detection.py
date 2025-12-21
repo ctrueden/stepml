@@ -148,10 +148,10 @@ class TestRatingNormalizer:
         test_cases = {
             1: 1.0,
             5: 9.0,
-            7: 11.0,
-            8: 13.0,
-            9: 14.0,
-            10: 16.0,
+            7: 10.5,
+            8: 12.0,
+            9: 13.0,
+            10: 14.5,
         }
 
         for original, expected in test_cases.items():
@@ -163,10 +163,10 @@ class TestRatingNormalizer:
         test_cases = {
             1: 1.0,
             5: 9.0,
-            8: 14.0,  # ITG 8 ≈ Classic DDR 9
-            9: 15.0,
-            10: 16.5,
-            12: 19.0,
+            8: 12.5,  # ITG 8 ≈ Classic DDR 9
+            9: 14.0,
+            10: 15.5,
+            12: 18.5,
         }
 
         for original, expected in test_cases.items():
@@ -190,10 +190,10 @@ class TestRatingNormalizer:
         """Test converting unified ratings back to original scales."""
         # Test Classic DDR denormalization
         assert normalizer.denormalize(11.0, ScaleType.CLASSIC_DDR) == 7
-        assert normalizer.denormalize(13.0, ScaleType.CLASSIC_DDR) == 8
+        assert normalizer.denormalize(13.0, ScaleType.CLASSIC_DDR) == 9
 
         # Test ITG denormalization
-        assert normalizer.denormalize(14.0, ScaleType.ITG) == 8
+        assert normalizer.denormalize(14.0, ScaleType.ITG) == 9
         assert normalizer.denormalize(19.0, ScaleType.ITG) == 12
 
         # Test Modern DDR denormalization (identity)
@@ -214,8 +214,8 @@ class TestRatingNormalizer:
         assert len(normalized) == len(ratings)
         assert normalized["Easy"] == 5.0
         assert normalized["Medium"] == 10.0
-        assert normalized["Hard"] == 13.0
-        assert normalized["Challenge"] == 16.0
+        assert normalized["Hard"] == 12.0
+        assert normalized["Challenge"] == 14.5
 
     def test_get_scale_range(self, normalizer):
         """Test scale range retrieval."""
@@ -229,7 +229,7 @@ class TestRatingNormalizer:
 
         assert info["original_rating"] == 8
         assert info["source_scale"] == "itg"
-        assert info["normalized_rating"] == 14.0
+        assert info["normalized_rating"] == 12.5
         assert "classic_ddr_equivalent" in info
         assert "modern_ddr_equivalent" in info
         assert "itg_equivalent" in info
