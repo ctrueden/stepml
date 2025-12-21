@@ -10,4 +10,14 @@ It was vibe-coded using Claude Sonnet and Haiku 4.5 models, with human guidance
 at important points along the way. The result is a system to produce
 consistently scaled ratings across all stepcharts in your collection.
 
-For details, see documentation in the `doc` directory.
+| Command                    | Purpose                                |
+|----------------------------|----------------------------------------|
+| uv run generate-baseline   | Regenerate regression test baseline    |
+| uv run generate-dataset    | Process charts and create ML dataset   |
+| uv run generate-ratings    | Generate calculated difficulty ratings |
+| uv run generate-playlists  | Create StepMania course playlists      |
+| uv run train-models        | Train ML models on dataset             |
+| uv run sync-favorites      | Sync StepMania favorites lists         |
+| uv run analyze-performance | Analyze performance-enriched dataset   |
+
+For further technical details, see documentation in the `doc` directory.

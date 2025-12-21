@@ -14,18 +14,17 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from ..parsers.sm_parser import parse_sm_file
-from ..features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
+from stepml.parsers.sm_parser import parse_sm_file
+from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
 
 
 def generate_baseline():
     """Generate baseline feature extractions for all test charts."""
-    # Setup paths - script is at src/stepml/scripts/generate_baseline.py
-    # Need to go up 3 levels to reach project root (stepml/)
-    script_dir = Path(__file__).parent  # scripts/
-    scripts_parent = script_dir.parent  # stepml/ (package)
-    src_parent = scripts_parent.parent  # src/
-    stepml_root = src_parent.parent  # stepml/ (project root)
+    # Setup paths - script is at src/stepml/generate_baseline.py
+    # Need to go up 2 levels to reach project root (stepml/)
+    script_dir = Path(__file__).parent  # stepml/ (package)
+    src_root = script_dir.parent  # src/
+    stepml_root = src_root.parent  # stepml/ (project root)
     
     songs_dir = stepml_root.parent / "Songs"  # ../Songs
     test_charts_path = stepml_root / "tests" / "fixtures" / "test_charts.json"

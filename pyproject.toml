@@ -11,3 +11,12 @@ dependencies = [
     "pytest>=8.0.0",
     "scikit-learn>=1.7.2",
 ]
+
+[project.scripts]
+generate-baseline = "stepml.generate_baseline:generate_baseline"
+generate-dataset = "stepml.generate_dataset:main"
+generate-ratings = "stepml.generate_calculated_ratings:main"
+generate-playlists = "stepml.generate_playlists:main"
+train-models = "stepml.train_baseline_models:main"
+sync-favorites = "stepml.sync_favorites:main"
+analyze-performance = "stepml.analyze_performance_data:main"
