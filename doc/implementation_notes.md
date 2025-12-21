@@ -16,7 +16,7 @@ Your collection contains all three major formats:
 
 ### Phase 1: Core Parser (Week 1-2) ✅ COMPLETE
 **Status**: Completed 2025-10-15
-**Location**: `~/Games/StepMania/stepchart-reclassify/`
+**Location**: `~/Games/StepMania/stepml/`
 
 **Implemented**:
 1. ✅ `.sm` parser - fully functional with comprehensive metadata extraction
@@ -160,7 +160,7 @@ class FeatureSet:
 
 ```bash
 # Actual implementation structure:
-stepchart-reclassify/
+stepml/
 ├── parsers/          # Chart parsers
 ├── features/         # Feature extraction
 ├── utils/            # Data structures
@@ -204,9 +204,9 @@ for chart in chart_data.charts:
 
 ### Running Tests
 ```bash
-cd stepchart-reclassify
-uv run python3 test_parser.py                    # Runs on first 3 .sm files found
-uv run python3 test_parser.py <path>             # Test specific file
+cd stepml
+uv run python3 src/stepml/test_parser.py         # Runs on first 3 .sm files found
+uv run python3 src/stepml/test_parser.py <path>  # Test specific file
 uv run python3 examples/example_usage.py <path>  # See usage examples
 ```
 
@@ -216,24 +216,22 @@ uv run python3 examples/example_usage.py <path>  # See usage examples
 
 ## Project Status Summary
 
-✅ **Phase 1 Complete** (2025-10-15)
+✅ **Phase 1**
 - Full .sm parser with 19+ feature extraction
 - Tested on real charts from collection
 - Clean, modular architecture ready for expansion
 
-🔄 **Phase 2 Next** (Scale Detection)
+🔄 **Phase 2** (Scale Detection)
 - Implement songpack classification
 - Build scale confidence scoring
 - Rating normalization tables
 
-📋 **Phase 3 Planned** (Multi-Format Support)
+📋 **Phase 3** (Multi-Format Support)
 - .ssc parser for StepMania 5 charts
 - .dwi parser for legacy formats
 - Format normalization
 
-🎯 **Phase 4 Planned** (ML Pipeline)
+🎯 **Phase 4** (ML Pipeline)
 - Baseline model training
 - Feature selection and optimization
 - Validation framework
-
-The specification document provides the complete roadmap, and your song collection structure is perfect for this analysis. The mix of formats and scales will make this a really interesting ML project!

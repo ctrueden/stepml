@@ -5,7 +5,7 @@ Converts ratings between Classic DDR, Modern DDR, and ITG scales
 to a unified rating system for consistent ML training and comparison.
 """
 from typing import Dict, Optional
-from utils.data_structures import ScaleType
+from stepml.utils.data_structures import ScaleType
 
 
 class RatingNormalizer:

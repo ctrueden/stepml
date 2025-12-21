@@ -3,13 +3,11 @@ Universal parser that auto-detects file format and uses appropriate parser.
 """
 from pathlib import Path
 from typing import Union
-import sys
-sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.data_structures import ChartData
-from parsers.sm_parser import parse_sm_file
-from parsers.ssc_parser import parse_ssc_file
-from parsers.dwi_parser import parse_dwi_file
+from stepml.utils.data_structures import ChartData
+from stepml.parsers.sm_parser import parse_sm_file
+from stepml.parsers.ssc_parser import parse_ssc_file
+from stepml.parsers.dwi_parser import parse_dwi_file
 
 
 class UniversalParser:

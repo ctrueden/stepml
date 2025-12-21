@@ -7,7 +7,7 @@ pack name, path patterns, and statistical analysis of ratings.
 import re
 from pathlib import Path
 from typing import Tuple, List, Optional
-from utils.data_structures import ScaleType, ChartData, NoteData
+from stepml.utils.data_structures import ScaleType, ChartData, NoteData
 
 
 class ScaleDetector:

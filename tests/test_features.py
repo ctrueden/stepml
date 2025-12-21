@@ -6,11 +6,13 @@ accurate results across parser updates.
 """
 import json
 import pytest
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from parsers.sm_parser import parse_sm_file
-from features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
-from utils.data_structures import FeatureSet
+from stepml.parsers.sm_parser import parse_sm_file
+from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
+from stepml.utils.data_structures import FeatureSet
 
 
 @pytest.mark.features

@@ -4,15 +4,13 @@ Parser for legacy DanceWith Intensity .dwi files.
 import re
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
-import sys
-sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.data_structures import (
+from stepml.utils.data_structures import (
     ChartData, NoteData, TimingEvent, ChartType,
     DifficultyType, ScaleType
 )
-from utils.scale_detector import ScaleDetector
-from utils.rating_normalizer import RatingNormalizer
+from stepml.utils.scale_detector import ScaleDetector
+from stepml.utils.rating_normalizer import RatingNormalizer
 
 
 class DWIParser:

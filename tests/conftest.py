@@ -8,12 +8,12 @@ from typing import Dict, List, Any
 
 import pytest
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add src directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from parsers.sm_parser import parse_sm_file
-from features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
-from utils.data_structures import ChartData, NoteData
+from stepml.parsers.sm_parser import parse_sm_file
+from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
+from stepml.utils.data_structures import ChartData, NoteData
 
 
 @pytest.fixture(scope="session")

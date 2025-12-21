@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 import logging
 
-from parsers.stats_parser import StatsParser, ChartPerformance
+from stepml.parsers.stats_parser import StatsParser, ChartPerformance
 
 logger = logging.getLogger(__name__)
 

@@ -2,10 +2,13 @@
 Tests for scale detection and rating normalization.
 """
 import pytest
+import sys
 from pathlib import Path
-from utils.scale_detector import ScaleDetector
-from utils.rating_normalizer import RatingNormalizer
-from utils.data_structures import ScaleType, NoteData, DifficultyType, ChartType
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from stepml.utils.scale_detector import ScaleDetector
+from stepml.utils.rating_normalizer import RatingNormalizer
+from stepml.utils.data_structures import ScaleType, NoteData, DifficultyType, ChartType, ChartData
 
 
 class TestScaleDetector:
@@ -95,7 +98,13 @@ class TestScaleDetector:
             NoteData(ChartType.SINGLE, DifficultyType.CHALLENGE, 10, ""),
         ]
 
-        scale, confidence = detector.detect_scale("/Songs/Unknown/Song/file.sm", classic_charts)
+        chart_data = ChartData(
+            filepath="/Songs/Unknown/Song/file.sm",
+            format=".sm",
+            songpack="Unknown",
+            charts=classic_charts
+        )
+        scale, confidence = detector.detect_scale("/Songs/Unknown/Song/file.sm", chart_data)
         # Without name match, should rely on statistics
         assert scale == ScaleType.CLASSIC_DDR or scale == ScaleType.UNKNOWN
 
@@ -107,7 +116,13 @@ class TestScaleDetector:
             NoteData(ChartType.SINGLE, DifficultyType.CHALLENGE, 19, ""),
         ]
 
-        scale, confidence = detector.detect_scale("/Songs/Unknown/Song/file.sm", modern_charts)
+        chart_data = ChartData(
+            filepath="/Songs/Unknown/Song/file.sm",
+            format=".sm",
+            songpack="Unknown",
+            charts=modern_charts
+        )
+        scale, confidence = detector.detect_scale("/Songs/Unknown/Song/file.sm", chart_data)
         assert scale == ScaleType.MODERN_DDR
 
     def test_get_scale_info(self, detector):

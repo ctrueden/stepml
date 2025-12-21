@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from models.baseline_models import LinearRegressionModel, RandomForestModel
+from stepml.models.baseline_models import LinearRegressionModel, RandomForestModel
 
 
 logging.basicConfig(

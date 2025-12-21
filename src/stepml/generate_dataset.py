@@ -20,11 +20,11 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from parsers.universal_parser import parse_chart_file
-from features.feature_extractor import FeatureExtractor
-from utils.data_structures import ChartData
-from utils.scale_detector import ScaleDetector
-from utils.performance_enrichment import PerformanceEnricher
+from stepml.parsers.universal_parser import parse_chart_file
+from stepml.features.feature_extractor import FeatureExtractor
+from stepml.utils.data_structures import ChartData
+from stepml.utils.scale_detector import ScaleDetector
+from stepml.utils.performance_enrichment import PerformanceEnricher
 
 
 logging.basicConfig(

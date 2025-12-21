@@ -6,18 +6,18 @@ Tests .sm, .ssc, and .dwi parsers along with universal parser.
 import pytest
 from pathlib import Path
 import sys
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from parsers.sm_parser import parse_sm_file
-from parsers.ssc_parser import parse_ssc_file
-from parsers.dwi_parser import parse_dwi_file
-from parsers.universal_parser import (
+from stepml.parsers.sm_parser import parse_sm_file
+from stepml.parsers.ssc_parser import parse_ssc_file
+from stepml.parsers.dwi_parser import parse_dwi_file
+from stepml.parsers.universal_parser import (
     parse_chart_file,
     detect_format,
     is_supported_format,
     UniversalParser
 )
-from utils.data_structures import ChartType, DifficultyType
+from stepml.utils.data_structures import ChartType, DifficultyType
 
 
 # Test file paths
@@ -278,7 +278,7 @@ class TestFeatureExtractionCompatibility:
 
     def test_feature_extraction_sm(self):
         """Test feature extraction on .sm files."""
-        from features.feature_extractor import FeatureExtractor
+        from stepml.features.feature_extractor import FeatureExtractor
 
         chart_data = parse_sm_file(str(SM_FILE))
         extractor = FeatureExtractor()
@@ -291,7 +291,7 @@ class TestFeatureExtractionCompatibility:
 
     def test_feature_extraction_ssc(self):
         """Test feature extraction on .ssc files."""
-        from features.feature_extractor import FeatureExtractor
+        from stepml.features.feature_extractor import FeatureExtractor
 
         chart_data = parse_ssc_file(str(SSC_FILE))
         extractor = FeatureExtractor()
@@ -304,7 +304,7 @@ class TestFeatureExtractionCompatibility:
 
     def test_feature_extraction_dwi(self):
         """Test feature extraction on .dwi files."""
-        from features.feature_extractor import FeatureExtractor
+        from stepml.features.feature_extractor import FeatureExtractor
 
         chart_data = parse_dwi_file(str(DWI_FILE))
         extractor = FeatureExtractor()

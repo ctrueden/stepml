@@ -7,7 +7,7 @@ import argparse
 import json
 import pandas as pd
 from pathlib import Path
-from models.baseline_models import RandomForestModel
+from stepml.models.baseline_models import RandomForestModel
 
 
 def convert_chart_type_to_stepmania_format(chart_type: str) -> str:

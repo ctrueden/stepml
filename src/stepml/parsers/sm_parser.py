@@ -1,24 +1,22 @@
 """
-Parser for StepMania 5 .ssc files.
+Parser for StepMania .sm files.
 """
 import re
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
-import sys
-sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.data_structures import (
+from stepml.utils.data_structures import (
     ChartData, NoteData, TimingEvent, ChartType,
     DifficultyType, ScaleType
 )
-from utils.scale_detector import ScaleDetector
-from utils.rating_normalizer import RatingNormalizer
+from stepml.utils.scale_detector import ScaleDetector
+from stepml.utils.rating_normalizer import RatingNormalizer
 
 
-class SSCParser:
-    """Parser for StepMania 5 .ssc format files."""
+class SMParser:
+    """Parser for StepMania .sm format files."""
 
-    # Map SSC difficulty names to our enum
+    # Map SM difficulty names to our enum
     DIFFICULTY_MAP = {
         "beginner": DifficultyType.BEGINNER,
         "easy": DifficultyType.EASY,
@@ -28,7 +26,7 @@ class SSCParser:
         "edit": DifficultyType.EDIT,
     }
 
-    # Map SSC chart type names to our enum
+    # Map SM chart type names to our enum
     CHART_TYPE_MAP = {
         "dance-single": ChartType.SINGLE,
         "dance-double": ChartType.DOUBLE,
@@ -37,16 +35,16 @@ class SSCParser:
     }
 
     def __init__(self):
-        """Initialize the SSC parser."""
+        """Initialize the SM parser."""
         self.scale_detector = ScaleDetector()
         self.rating_normalizer = RatingNormalizer()
 
     def parse_file(self, filepath: str) -> ChartData:
         """
-        Parse a .ssc file and return ChartData.
+        Parse a .sm file and return ChartData.
 
         Args:
-            filepath: Path to the .ssc file
+            filepath: Path to the .sm file
 
         Returns:
             ChartData object with parsed information
@@ -63,7 +61,7 @@ class SSCParser:
         chart_data = ChartData(
             filepath=str(filepath),
             format=filepath.suffix,
-            songpack=filepath.parent.parent.name  # Assuming Songs/PackName/Song/file.ssc
+            songpack=filepath.parent.parent.name  # Assuming Songs/PackName/Song/file.sm
         )
 
         # Parse all tags
@@ -77,7 +75,7 @@ class SSCParser:
         return chart_data
 
     def _parse_metadata(self, content: str, chart_data: ChartData):
-        """Extract metadata tags from .ssc file."""
+        """Extract metadata tags from .sm file."""
         # Simple tag parser - handles #TAG:value;
         def get_tag_value(tag_name: str) -> str:
             pattern = rf'#\s*{tag_name}\s*:\s*([^;]*);'
@@ -85,9 +83,6 @@ class SSCParser:
             if match:
                 return match.group(1).strip()
             return ""
-
-        # Parse version (specific to SSC)
-        chart_data.version = get_tag_value("VERSION")
 
         chart_data.title = get_tag_value("TITLE")
         chart_data.subtitle = get_tag_value("SUBTITLE")
@@ -122,7 +117,7 @@ class SSCParser:
                 pass
 
     def _parse_timing(self, content: str, chart_data: ChartData):
-        """Parse timing information (BPMs, stops, delays, warps, etc.)."""
+        """Parse timing information (BPMs, stops, etc.)."""
         # Parse BPMs
         bpm_pattern = r'#\s*BPMS\s*:\s*([^;]+);'
         bpm_match = re.search(bpm_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
@@ -137,14 +132,14 @@ class SSCParser:
             stops_data = stops_match.group(1)
             chart_data.stops = self._parse_timing_list(stops_data)
 
-        # Parse delays (SSC-specific)
+        # Parse delays (if present)
         delays_pattern = r'#\s*DELAYS\s*:\s*([^;]+);'
         delays_match = re.search(delays_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
         if delays_match:
             delays_data = delays_match.group(1)
             chart_data.delays = self._parse_timing_list(delays_data)
 
-        # Parse warps (SSC-specific)
+        # Parse warps (if present)
         warps_pattern = r'#\s*WARPS\s*:\s*([^;]+);'
         warps_match = re.search(warps_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
         if warps_match:
@@ -179,90 +174,52 @@ class SSCParser:
         return events
 
     def _parse_charts(self, content: str, chart_data: ChartData):
-        """
-        Parse all chart sections from .ssc file.
+        """Parse all chart (NOTES) sections from .sm file."""
+        # Pattern to match NOTES sections
+        # Format: #NOTES:type:author:difficulty:rating:radar:notes;
+        notes_pattern = r'#NOTES\s*:\s*([^:]+)\s*:\s*([^:]*)\s*:\s*([^:]+)\s*:\s*(\d+)\s*:\s*([^:]*)\s*:\s*([^;]+);'
 
-        SSC format uses #NOTEDATA: to separate charts, followed by per-chart
-        metadata, and then #NOTES: with the actual note data.
-        """
-        # Split content by #NOTEDATA: markers
-        notedata_sections = re.split(r'#NOTEDATA\s*:', content, flags=re.IGNORECASE)
+        matches = re.finditer(notes_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
 
-        # Skip first section (global metadata)
-        for section in notedata_sections[1:]:
-            self._parse_chart_section(section, chart_data)
+        for match in matches:
+            chart_type_str = match.group(1).strip().lower()
+            # author = match.group(2).strip()  # Not used currently
+            difficulty_str = match.group(3).strip().lower()
+            rating_str = match.group(4).strip()
+            # radar = match.group(5).strip()  # Not used currently
+            notes_data = match.group(6).strip()
 
-    def _parse_chart_section(self, section: str, chart_data: ChartData):
-        """
-        Parse a single chart section from SSC format.
+            # Map to our enums
+            chart_type = self.CHART_TYPE_MAP.get(chart_type_str)
+            difficulty = self.DIFFICULTY_MAP.get(difficulty_str)
 
-        Format:
-        #NOTEDATA:
-        #CHARTNAME:...;
-        #STEPSTYPE:dance-single;
-        #DESCRIPTION:...;
-        #CHARTSTYLE:...;
-        #DIFFICULTY:Challenge;
-        #METER:10;
-        #RADARVALUES:...;
-        #CREDIT:...;
-        #NOTES:
-        [note data]
-        ;
-        """
-        # Extract per-chart metadata
-        def get_tag_value(tag_name: str) -> str:
-            pattern = rf'#\s*{tag_name}\s*:\s*([^;]*);'
-            match = re.search(pattern, section, re.IGNORECASE | re.MULTILINE)
-            if match:
-                return match.group(1).strip()
-            return ""
+            if chart_type is None or difficulty is None:
+                # Skip unknown chart types/difficulties
+                continue
 
-        # Get chart type and difficulty
-        chart_type_str = get_tag_value("STEPSTYPE").lower()
-        difficulty_str = get_tag_value("DIFFICULTY").lower()
-        rating_str = get_tag_value("METER")
+            try:
+                rating = int(rating_str)
+            except ValueError:
+                rating = 0
 
-        # Map to our enums
-        chart_type = self.CHART_TYPE_MAP.get(chart_type_str)
-        difficulty = self.DIFFICULTY_MAP.get(difficulty_str)
+            # Create NoteData object
+            note_data = NoteData(
+                chart_type=chart_type,
+                difficulty=difficulty,
+                rating=rating,
+                raw_notes=notes_data
+            )
 
-        if chart_type is None or difficulty is None:
-            # Skip unknown chart types/difficulties
-            return
+            # Parse the note data
+            self._parse_note_data(notes_data, note_data)
 
-        try:
-            rating = int(rating_str)
-        except (ValueError, TypeError):
-            rating = 0
-
-        # Extract notes data (everything after #NOTES: and before the closing ;)
-        notes_pattern = r'#NOTES\s*:\s*([^;]+);'
-        notes_match = re.search(notes_pattern, section, re.IGNORECASE | re.MULTILINE | re.DOTALL)
-
-        if not notes_match:
-            return
-
-        notes_data = notes_match.group(1).strip()
-
-        # Create NoteData object
-        note_data = NoteData(
-            chart_type=chart_type,
-            difficulty=difficulty,
-            rating=rating,
-            raw_notes=notes_data
-        )
-
-        # Parse the note data (same format as .sm)
-        self._parse_note_data(notes_data, note_data)
-
-        chart_data.charts.append(note_data)
+            chart_data.charts.append(note_data)
 
     def _parse_note_data(self, notes_str: str, note_data: NoteData):
         """
         Parse the actual note data from a chart.
 
-        Note format (same as .sm):
+        Note format:
         - Each measure is separated by a comma
         - Each line represents a subdivision of a beat
         - For dance-single: 4 columns (LDUR - Left, Down, Up, Right)
@@ -279,7 +236,7 @@ class SSCParser:
         - M: mine
 
         Args:
-            notes_str: Raw note string from .ssc file
+            notes_str: Raw note string from .sm file
             note_data: NoteData object to populate
         """
         # Split by comma to get measures
@@ -413,15 +370,15 @@ class SSCParser:
         return chart.total_notes / duration_seconds
 
 
-def parse_ssc_file(filepath: str) -> ChartData:
+def parse_sm_file(filepath: str) -> ChartData:
     """
-    Convenience function to parse a .ssc file.
+    Convenience function to parse a .sm file.
 
     Args:
-        filepath: Path to the .ssc file
+        filepath: Path to the .sm file
 
     Returns:
         ChartData object
     """
-    parser = SSCParser()
+    parser = SMParser()
     return parser.parse_file(filepath)

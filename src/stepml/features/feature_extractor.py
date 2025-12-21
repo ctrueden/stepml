@@ -4,10 +4,8 @@ Feature extraction for StepMania charts.
 import numpy as np
 from typing import List, Dict, Tuple
 from pathlib import Path
-import sys
-sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.data_structures import ChartData, NoteData, FeatureSet, TimingEvent
+from stepml.utils.data_structures import ChartData, NoteData, FeatureSet, TimingEvent
 
 
 class FeatureExtractor:

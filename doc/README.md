@@ -39,18 +39,23 @@ This directory contains the specification and documentation for the ML-based Ste
 
 ```
 ~/Games/StepMania/
-├── stepchart-reclassify/                  # Main implementation
-│   ├── parsers/                           # Multi-format parsers
-│   ├── features/                          # Feature extraction
-│   ├── utils/                             # Data structures & utilities
-│   ├── models/                            # Trained ML models
-│   ├── data/                              # Datasets & output
+├── stepml/                                # Main implementation
+│   ├── src/stepml/                        # Main program source code
+│   │   ├── generate_baseline.py           # Regenerate regression test baseline
+│   │   ├── generate_dataset.py            # Dataset generation from charts
+│   │   ├── generate_calculated_ratings.py # Generate ML difficulty predictions
+│   │   ├── generate_playlists.py          # Create StepMania course playlists
+│   │   ├── train_baseline_models.py       # Train ML models on dataset
+│   │   ├── sync_favorites.py              # Sync StepMania favorites lists
+│   │   ├── analyze_performance_data.py    # Analyze player performance data
+│   │   ├── features/                      # Feature extraction
+│   │   ├── models/                        # ML model implementations
+│   │   ├── parsers/                       # Multi-format parsers
+│   │   └── utils/                         # Data structures & utilities
+│   ├── data/                              # Generated datasets & output
 │   ├── doc/                               # ← Documentation
-│   └── examples/                          # Example usage - e.g. ML inference
-│   ├── tests/                             # Test suite
-│   ├── notebooks/                         # Analysis notebooks
-│   ├── generate_dataset.py                # Dataset generation
-│   └── train_baseline_models.py           # Model training
+│   ├── examples/                          # Examples of usage
+│   └── tests/                             # Test suite
 │
 ├── Songs/                                 # Song collection (102 packs, 4,334 charts)
 └── Save/LocalProfiles/00000000/Stats.xml  # Player performance history
@@ -58,25 +63,58 @@ This directory contains the specification and documentation for the ML-based Ste
 
 ## Quick Start
 
-### Generating Predictions
-```bash
-cd ~/Games/StepMania/stepchart-reclassify
+### CLI Commands
 
-# Generate difficulty prediction for a chart
-uv run python example_ml_usage.py "../Songs/StepMania 5/Goin' Under/Goin' Under.sm"
+All scripts are available as entry points via `uv run`:
+
+```bash
+cd ~/Games/StepMania/stepml
 
 # Generate dataset from all charts
-uv run python generate_dataset.py
+uv run generate-dataset
 
-# Train models
-uv run python train_baseline_models.py
+# Train ML models
+uv run train-models
+
+# Generate calculated difficulty ratings
+uv run generate-ratings
+
+# Create course playlists
+uv run generate-playlists
+
+# Sync StepMania favorites lists
+uv run sync-favorites
+
+# Analyze player performance data
+uv run analyze-performance
+
+# Regenerate regression test baseline
+uv run generate-baseline
+```
+
+### Usage Examples
+
+```bash
+cd ~/Games/StepMania/stepml
+
+# Generate difficulty prediction for a chart
+uv run python examples/example_ml_usage.py "../Songs/StepMania 5/Goin' Under/Goin' Under.sm"
+
+# Generate dataset with options
+uv run generate-dataset --help
+
+# Train models and view results
+uv run train-models --help
+
+# Create playlists with custom settings
+uv run generate-playlists --help
 ```
 
 ### Using the Libraries
 ```python
-from parsers.universal_parser import parse_chart_file
-from features.feature_extractor import FeatureExtractor
-from models.baseline_models import RandomForestModel
+from stepml.parsers.universal_parser import parse_chart_file
+from stepml.features.feature_extractor import FeatureExtractor
+from stepml.models.baseline_models import RandomForestModel
 
 # Parse any chart format
 chart_data = parse_chart_file("path/to/chart.sm")  # or .ssc or .dwi

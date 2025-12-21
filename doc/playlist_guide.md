@@ -18,15 +18,15 @@ The `generate_playlists.py` script automates creation of difficulty-tiered playl
 ### Generate Fresh Playlists
 
 ```bash
-cd ~/Games/StepMania/stepchart-reclassify
+cd ~/Games/StepMania/stepml
 
 # Generate playlists (100 songs per tier by default)
-uv run python generate_playlists.py \\
+uv run python src/stepml/generate_playlists.py \\
     --output ~/Games/StepMania/Courses/Workout \\
     --favorites ~/Games/StepMania/Courses/Workout/Favorites.songs
 
 # Generate with random course variants (like old randomize.sh)
-uv run python generate_playlists.py \\
+uv run python src/stepml/generate_playlists.py \\
     --output ~/Games/StepMania/Courses/Workout \\
     --favorites ~/Games/StepMania/Courses/Workout/Favorites.songs \\
     --random-courses
@@ -85,7 +85,7 @@ Each tier generates separate `.songs` files:
 
 ### Adjust Difficulty Tiers
 
-Edit the `tiers` list in `generate_playlists.py`:
+Edit the `tiers` list in `src/stepml/generate_playlists.py`:
 
 ```python
 tiers = [
@@ -99,14 +99,14 @@ tiers = [
 ### Change Songs Per Tier
 
 ```bash
-uv run python generate_playlists.py --songs-per-tier 150
+uv run python src/stepml/generate_playlists.py --songs-per-tier 150
 ```
 
 ### Generate Only Single or Only Double
 
 ```bash
-uv run python generate_playlists.py --chart-types dance-single
-uv run python generate_playlists.py --chart-types dance-double
+uv run python src/stepml/generate_playlists.py --chart-types dance-single
+uv run python src/stepml/generate_playlists.py --chart-types dance-double
 ```
 
 ## Workflow Integration
@@ -114,7 +114,7 @@ uv run python generate_playlists.py --chart-types dance-double
 ### Replacing Old Scripts
 
 **Old**: `bin/randomize.sh`
-**New**: `generate_playlists.py --random-courses`
+**New**: `src/stepml/generate_playlists.py --random-courses`
 
 **Old**: Manual vetting with `bin/song.sh`
 **New**: No need! Charts are auto-included based on calculated rating
@@ -131,8 +131,8 @@ Keep using your existing workflow to add bad songs:
 echo "#SONG:PackName/SongName:HARD;" >> ~/Games/StepMania/Courses/Workout/Veto.songs
 
 # Regenerate playlists (automatically excludes vetoed songs)
-cd ~/Games/StepMania/stepchart-reclassify
-uv run python generate_playlists.py --output ~/Games/StepMania/Courses/Workout
+cd ~/Games/StepMania/stepml
+uv run python src/stepml/generate_playlists.py --output ~/Games/StepMania/Courses/Workout
 ```
 
 ### Maintaining Favorites
@@ -142,7 +142,7 @@ uv run python generate_playlists.py --output ~/Games/StepMania/Courses/Workout
 echo "#SONG:PackName/SongName:HARD;" >> ~/Games/StepMania/Courses/Workout/Favorites.songs
 
 # Regenerate with favorites weighted higher
-uv run python generate_playlists.py \\
+uv run python src/stepml/generate_playlists.py \\
     --output ~/Games/StepMania/Courses/Workout \\
     --favorites ~/Games/StepMania/Courses/Workout/Favorites.songs
 ```
@@ -195,5 +195,5 @@ Possible additions:
 
 The script has extensive help:
 ```bash
-uv run python generate_playlists.py --help
+uv run python src/stepml/generate_playlists.py --help
 ```

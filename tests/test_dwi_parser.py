@@ -6,9 +6,9 @@ Tests the fix for DOUBLE chart parsing and validates note counting.
 
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from parsers.dwi_parser import parse_dwi_file
+from stepml.parsers.dwi_parser import parse_dwi_file
 
 
 def test_zip_a_dee_doo_dah():

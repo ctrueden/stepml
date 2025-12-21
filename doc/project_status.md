@@ -14,7 +14,7 @@ Machine learning-based system for analyzing StepMania step charts and providing 
 ### ✅ Phase 1: Core Parser and Feature Extraction (COMPLETE)
 
 **Duration**: 1 session (2025-10-15)
-**Location**: `~/Games/StepMania/stepchart-reclassify/`
+**Location**: `~/Games/StepMania/stepml/`
 **Status**: Fully implemented and tested
 
 #### Deliverables
@@ -299,7 +299,7 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
 
 ```
 ~/Games/StepMania/
-├── stepchart-reclassify/
+├── stepml/
 │   ├── parsers/
 │   │   ├── __init__.py
 │   │   └── sm_parser.py
@@ -335,7 +335,7 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
 ### Running the System
 
 ```bash
-cd ~/Games/StepMania/stepchart-reclassify
+cd ~/Games/StepMania/stepml
 
 # Test parser on sample files
 uv run python3 test_parser.py
