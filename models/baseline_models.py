@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Baseline ML models for difficulty rating prediction.
 

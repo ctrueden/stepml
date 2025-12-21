@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Generate calculated difficulty ratings for all charts in the collection.
 

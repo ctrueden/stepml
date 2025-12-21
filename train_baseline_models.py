@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Training script for baseline ML models.
 

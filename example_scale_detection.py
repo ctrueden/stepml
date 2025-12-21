@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Example usage of Phase 2: Scale Detection and Rating Normalization
 

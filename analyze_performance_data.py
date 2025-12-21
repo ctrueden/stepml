@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Analysis of performance-enriched dataset.
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Generate baseline feature extractions for regression testing.
 

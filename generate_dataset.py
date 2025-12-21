@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Dataset Generation Script for StepMania Chart Analysis
 

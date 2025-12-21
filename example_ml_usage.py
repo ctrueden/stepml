@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Example usage of trained ML models for difficulty prediction.
 

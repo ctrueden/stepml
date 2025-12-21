@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Generate StepMania course playlists based on calculated difficulty ratings.
 

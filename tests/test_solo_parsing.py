@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Test dance-solo (6-column) chart parsing.
 """
