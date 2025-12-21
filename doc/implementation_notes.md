@@ -24,21 +24,21 @@ Your collection contains all three major formats:
 3. ✅ Complete feature extraction system with 19+ features
 
 **Deliverables**:
-- `parsers/sm_parser.py`: Complete SM format parser
+- `../parsers/sm_parser.py`: Complete SM format parser
   - Metadata parsing (title, artist, BPM, offset, etc.)
   - Timing data (BPM changes, stops, delays, warps)
   - Note data parsing with tap/hold/roll/mine detection
   - Jump detection and beat-accurate positioning
-- `features/feature_extractor.py`: Comprehensive feature extraction
+- `../features/feature_extractor.py`: Comprehensive feature extraction
   - Density metrics (NPS, peak density, variance)
   - Pattern metrics (jump/hold/roll ratios)
   - Timing metrics (chart length, BPM analysis)
   - Advanced features (stream detection, direction changes, crossovers)
-- `utils/data_structures.py`: Clean, type-safe data structures
+- `../utils/data_structures.py`: Clean, type-safe data structures
   - ChartData, NoteData, FeatureSet classes
   - Enums for ScaleType, DifficultyType, ChartType
-- `test_parser.py`: Comprehensive test script
-- `example_usage.py`: Practical usage examples
+- `../test_parser.py`: Comprehensive test script
+- `../examples/example_usage.py`: Practical usage examples
 
 **Test Results**:
 - Successfully parsed 3 diverse charts from collection
@@ -94,7 +94,7 @@ Songs/[Originals] Teddy/     → Custom (unknown scale)
 
 ## Implemented Data Structures ✅
 
-**Location**: `stepchart-reclassify/utils/data_structures.py`
+**Location**: `../utils/data_structures.py`
 
 All data structures have been implemented as planned with enhancements:
 
@@ -205,15 +205,14 @@ for chart in chart_data.charts:
 ### Running Tests
 ```bash
 cd stepchart-reclassify
-uv run python3 test_parser.py           # Runs on first 3 .sm files found
-uv run python3 test_parser.py <path>    # Test specific file
-uv run python3 example_usage.py <path>  # See usage examples
+uv run python3 test_parser.py                    # Runs on first 3 .sm files found
+uv run python3 test_parser.py <path>             # Test specific file
+uv run python3 examples/example_usage.py <path>  # See usage examples
 ```
 
 ### Documentation
-- `stepchart-reclassify/PHASE1_COMPLETE.md` - Detailed phase 1 summary
-- `stepchart-reclassify/example_usage.py` - Practical usage examples
-- `doc/ml_step_chart_analysis.md` - Complete technical specification
+- `../examples/example_usage.py` - Practical usage examples
+- `ml_step_chart_analysis.md` - Complete technical specification
 
 ## Project Status Summary
 

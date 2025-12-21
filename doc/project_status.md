@@ -60,7 +60,7 @@ Machine learning-based system for analyzing StepMania step charts and providing 
 
 4. **Testing & Examples**
    - ✅ `test_parser.py`: Comprehensive test script
-   - ✅ `example_usage.py`: Practical usage examples
+   - ✅ `examples/example_usage.py`: Practical usage examples
    - ✅ Tested on 3 diverse charts from collection
    - ✅ All features show strong correlation with difficulty
 
@@ -120,7 +120,7 @@ Validated on real charts from the song collection:
 
 4. **Testing & Examples**
    - ✅ `tests/test_scale_detection.py`: 18 comprehensive tests
-   - ✅ `example_scale_detection.py`: Usage demonstrations
+   - ✅ `examples/example_scale_detection.py`: Usage demonstrations
    - ✅ `test_scale_detection_real.py`: Real collection validation
    - ✅ All tests passing
 
@@ -189,7 +189,7 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
    - ✅ All 68 tests passing (29 new + 39 existing)
 
 6. **Example Scripts**
-   - ✅ `example_multi_format.py`: 6 usage examples
+   - ✅ `examples/example_multi_format.py`: 6 usage examples
    - ✅ Format-specific test scripts
 
 #### Test Results
@@ -250,7 +250,7 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
    - ✅ Feature importance ranking
    - ✅ Model saving with metadata
 
-4. **Inference Example** (`example_ml_usage.py`)
+4. **Inference Example** (`examples/example_ml_usage.py`)
    - ✅ Load trained models
    - ✅ Predict difficulty for any chart
    - ✅ Compare model predictions
@@ -299,32 +299,32 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
 
 ```
 ~/Games/StepMania/
-├── stepchart-reclassify/           # Main implementation
-│   ├── parsers/                    # ✅ Phase 1
+├── stepchart-reclassify/
+│   ├── parsers/
 │   │   ├── __init__.py
 │   │   └── sm_parser.py
-│   ├── features/                   # ✅ Phase 1
+│   ├── features/
 │   │   ├── __init__.py
 │   │   └── feature_extractor.py
-│   ├── utils/                      # ✅ Phase 1 (partial Phase 2)
+│   ├── utils/
 │   │   ├── __init__.py
 │   │   └── data_structures.py
-│   ├── models/                     # 📋 Phase 4
-│   ├── data/                       # Storage
+│   ├── models/
+│   ├── data/
 │   │   ├── processed/
 │   │   ├── models/
 │   │   └── experiments/
-│   ├── notebooks/                  # 📋 Phase 3-4
-│   ├── tests/                      # Testing
-│   ├── test_parser.py              # ✅ Phase 1
-│   ├── example_usage.py            # ✅ Phase 1
-│   ├── PHASE1_COMPLETE.md          # ✅ Documentation
-│   ├── pyproject.toml              # ✅ uv config
-│   └── uv.lock                     # ✅ Dependencies
-├── doc/                            # Documentation
-│   ├── ml_step_chart_analysis.md   # Main specification
-│   ├── implementation_notes.md     # Updated with Phase 1
-│   └── PROJECT_STATUS.md           # This file
+│   ├── examples/
+│   │   └── example_usage.py
+│   ├── notebooks/
+│   ├── tests/
+│   ├── test_parser.py
+│   ├── pyproject.toml
+│   └── uv.lock
+├── doc/
+│   ├── ml_step_chart_analysis.md
+│   ├── implementation_notes.md
+│   └── project_status.md           # This file
 └── Songs/                          # Song collection (102 packs)
 ```
 
@@ -391,14 +391,14 @@ for chart in chart_data.charts:
 - **Phase 2 Summary**: `doc/PHASE2_COMPLETE.md`
 - **Phase 3 Summary**: `doc/PHASE3_COMPLETE.md`
 - **Examples**:
-  - `example_usage.py` (Phase 1 - parsing & features)
-  - `example_scale_detection.py` (Phase 2 - scale detection)
-  - `example_multi_format.py` (Phase 3 - multi-format support)
+  - `../example_usage.py` (Phase 1 - parsing & features)
+  - `../example_scale_detection.py` (Phase 2 - scale detection)
+  - `../example_multi_format.py` (Phase 3 - multi-format support)
 - **Tests**:
-  - `tests/test_parser.py` (Phase 1)
-  - `tests/test_features.py` (Phase 1)
-  - `tests/test_scale_detection.py` (Phase 2)
-  - `tests/test_multi_format.py` (Phase 3)
+  - `../tests/test_parser.py` (Phase 1)
+  - `../tests/test_features.py` (Phase 1)
+  - `../tests/test_scale_detection.py` (Phase 2)
+  - `../tests/test_multi_format.py` (Phase 3)
 
 ---
 

@@ -4,7 +4,7 @@ This directory contains the specification and documentation for the ML-based Ste
 
 ## Documentation Files
 
-### 📋 [PROJECT_STATUS.md](PROJECT_STATUS.md)
+### 📋 [project_status.md](project_status.md)
 **Start here!** Comprehensive current project status with all phases complete.
 
 - ✅ Phase 1: Complete (Parser & Feature Extraction)
@@ -46,11 +46,11 @@ This directory contains the specification and documentation for the ML-based Ste
 │   ├── models/                            # Trained ML models
 │   ├── data/                              # Datasets & output
 │   ├── doc/                               # ← Documentation
+│   └── examples/                          # Example usage - e.g. ML inference
 │   ├── tests/                             # Test suite
 │   ├── notebooks/                         # Analysis notebooks
 │   ├── generate_dataset.py                # Dataset generation
-│   ├── train_baseline_models.py           # Model training
-│   └── example_ml_usage.py                # ML inference examples
+│   └── train_baseline_models.py           # Model training
 │
 ├── Songs/                                 # Song collection (102 packs, 4,334 charts)
 └── Save/LocalProfiles/00000000/Stats.xml  # Player performance history
