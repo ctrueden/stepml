@@ -5,136 +5,150 @@ This directory contains the specification and documentation for the ML-based Ste
 ## Documentation Files
 
 ### 📋 [PROJECT_STATUS.md](PROJECT_STATUS.md)
-**Start here!** Current project status with phase progress, test results, and quick start guide.
+**Start here!** Comprehensive current project status with all phases complete.
 
 - ✅ Phase 1: Complete (Parser & Feature Extraction)
-- 🔄 Phase 2: Next (Scale Detection)
-- 📋 Phase 3-4: Planned
+- ✅ Phase 2: Complete (Scale Detection & Rating Normalization)
+- ✅ Phase 3: Complete (Multi-Format Support)
+- ✅ Phase 4: Complete (ML Pipeline & Model Training)
 
 ### 📖 [ml_step_chart_analysis.md](ml_step_chart_analysis.md)
-**Complete technical specification** covering the entire project architecture.
+**Complete technical specification** covering the project architecture and design.
 
 - Background and problem statement
 - Rating scale complexity (Classic DDR, Modern DDR, ITG)
-- Technical architecture and data pipeline
-- Feature specifications
-- ML model design
-- Implementation phases
+- Technical architecture overview
+- Data pipeline and processing strategy
 
 ### 🔧 [implementation_notes.md](implementation_notes.md)
-**Implementation details and context** with practical information.
+**Implementation details and practical information** for working with the codebase.
 
-- File format discovery (.sm, .ssc, .dwi)
-- Phase completion status
-- Data structures (implemented)
+- File format details (.sm, .ssc, .dwi)
+- Data structures and enums
 - Development environment setup
 - Quick start guide with code examples
+
+### 📄 [file_formats.md](file_formats.md)
+**Reference documentation** for all three chart file formats.
+
+- .sm format specification
+- .ssc format (StepMania 5) specification
+- .dwi format (legacy) encoding reference
 
 ## Project Structure
 
 ```
 /home/curtis/Games/StepMania/
 ├── stepchart-reclassify/                  # Main implementation
-│   ├── parsers/                           # File parsers
+│   ├── parsers/                           # Multi-format parsers
 │   ├── features/                          # Feature extraction
-│   ├── utils/                             # Data structures
-│   ├── models/                            # ML models (future)
-│   ├── data/                              # Data storage
-│   ├── test_parser.py                     # Test script
-│   ├── example_usage.py                   # Usage examples
-│   └── spec/                              # ← You are here
-│       ├── README.md                      # This file
-│       ├── project_status.md              # Current status
-│       ├── ml_step_chart_analysis.md      # Main specification
-│       ├── implementation_notes.md        # Implementation details
-│       └── phase1.md                      # Phase 1 summary
+│   ├── utils/                             # Data structures & utilities
+│   ├── models/                            # Trained ML models
+│   ├── data/                              # Datasets & output
+│   ├── tests/                             # Test suite
+│   ├── notebooks/                         # Analysis notebooks
+│   ├── generate_dataset.py                # Dataset generation
+│   ├── train_baseline_models.py           # Model training
+│   ├── example_ml_usage.py                # ML inference examples
+│   └── spec/                              # ← Documentation
 │
-├── Songs/                                 # Song collection (102 packs)
-└── Save/LocalProfiles/00000000/Stats.xml  # Stats over many expert play sessions
+├── Songs/                                 # Song collection (102 packs, 4,334 charts)
+└── Save/LocalProfiles/00000000/Stats.xml  # Player performance history
 ```
 
+## Quick Start
 
-## Quick Links
-
-### Getting Started
-1. Read [project_status.md](project_status.md) for current status
-2. Review [ml_step_chart_analysis.md](ml_step_chart_analysis.md) for full context
-3. Check [implementation_notes.md](implementation_notes.md) for usage examples
-4. See [phase1.md](phase1.md) for Phase 1 details
-5. Run tests: `uv run test_parser.py`
-
-### Key Concepts
-
-**Problem**: Multiple incompatible difficulty rating scales across DDR/ITG eras
-- Classic DDR: 1-10 scale
-- Modern DDR: 1-20 scale
-- ITG: 1-12 scale (with "rating creep" issues)
-
-**Solution**: ML-based system to:
-1. Parse all chart formats (.sm, .ssc, .dwi)
-2. Extract meaningful features (density, patterns, timing)
-3. Detect source scale and normalize ratings
-4. Provide unified, consistent difficulty ratings
-
-### Current Status
-
-✅ **Phase 1 Complete** (2025-10-15)
-- Full .sm parser implemented
-- 19+ features extracted per chart
-- Tested on real charts from collection
-- Clean, modular architecture
-
-🔄 **Phase 2 Next**: Scale Detection & Rating Normalization
-
-## Development
-
-### Running Tests
+### Generating Predictions
 ```bash
-cd ../stepchart-reclassify
-uv run test_parser.py
-uv run test_parser.py "../Songs/[path-to-chart]/chart.sm"
-uv run example_usage.py "../Songs/[path-to-chart]/chart.sm"
+cd /home/curtis/Games/StepMania/stepchart-reclassify
+
+# Generate difficulty prediction for a chart
+uv run python example_ml_usage.py "../Songs/StepMania 5/Goin' Under/Goin' Under.sm"
+
+# Generate dataset from all charts
+uv run python generate_dataset.py
+
+# Train models
+uv run python train_baseline_models.py
 ```
 
-### Using the Parser
+### Using the Libraries
 ```python
-from parsers.sm_parser import parse_sm_file
+from parsers.universal_parser import parse_chart_file
 from features.feature_extractor import FeatureExtractor
+from models.baseline_models import RandomForestModel
 
-chart_data = parse_sm_file("path/to/chart.sm")
+# Parse any chart format
+chart_data = parse_chart_file("path/to/chart.sm")  # or .ssc or .dwi
+
+# Extract features
 extractor = FeatureExtractor()
-
 for chart in chart_data.charts:
     features = extractor.extract_features(chart_data, chart)
     print(f"{chart.difficulty.value}: {features.notes_per_second:.2f} NPS")
+
+# Get ML predictions
+model = RandomForestModel()
+model.load(Path('data/models'))
+prediction = model.predict(features)
 ```
 
-### Dependencies
-- Python 3.12
-- uv (package manager)
+## Project Status
+
+✅ **All 4 Phases Complete** (2025-11-24)
+
+**Phase 1**: Parser & Feature Extraction
+- Full .sm parser with comprehensive feature extraction
+- Tested on real charts from collection
+
+**Phase 2**: Scale Detection & Rating Normalization
+- Automatic scale detection (91.7% accuracy)
+- Rating conversion across all historical scales
+
+**Phase 3**: Multi-Format Support
+- .ssc parser (StepMania 5 format)
+- .dwi parser (legacy format)
+- Universal parser with auto-detection
+- **100% coverage**: 4,334 chart files from 102 packs
+
+**Phase 4**: ML Pipeline & Model Training
+- Dataset generation: 26,287 charts
+- Baseline models: Linear Regression + Random Forest
+- **Top performance**: Random Forest MAE 0.91, R² 0.89, ρ 0.94
+
+## Dependencies
+
+```
+Python 3.12
+uv (package manager)
+
+Key packages:
 - numpy 2.3.4
+- pandas 2.3.3
+- scikit-learn 1.7.2
+- pyarrow 22.0.0
+- scipy 1.16.3
+```
 
-## Project Goals
+## Key Achievements
 
-1. **Unified Rating System**: Single 1-20 scale across all eras
-2. **Scale Translation**: Accurate conversion between DDR, ITG, modern scales
-3. **Multi-Format Support**: Parse .sm, .ssc, .dwi files seamlessly
-4. **Automated Rating**: Instant ratings for new charts
-5. **Improved Player Experience**: Predictable difficulty progression
+1. ✅ **Universal Parser**: Parse any chart format (.sm, .ssc, .dwi)
+2. ✅ **Feature Extraction**: 16 meaningful features per chart
+3. ✅ **Scale Detection**: Automatic DDR/ITG/Modern classification
+4. ✅ **Rating Normalization**: Unified scale across all eras
+5. ✅ **ML Models**: Production-ready difficulty predictor
+6. ✅ **Full Coverage**: 100% of collection (4,334 charts)
 
-## Background
+## Next Steps (Optional Enhancements)
 
-This project analyzes a collection of 102+ StepMania song packs containing thousands of charts across multiple difficulty levels and rating scales. The goal is to create a machine learning system that can:
-
-- Understand the nuances of different historical rating scales
-- Extract meaningful features from step charts
-- Provide consistent, accurate difficulty ratings
-- Account for known issues like ITG "rating creep"
-
-The system will help players have a more consistent experience across their entire song collection, regardless of which era or series each chart originated from.
+1. **Advanced Models**: Neural networks, ensemble methods
+2. **Hyperparameter Tuning**: Optimize Random Forest performance
+3. **Feature Engineering**: Advanced pattern detection
+4. **Web Service**: REST API for chart analysis
+5. **Visualization**: Difficulty prediction plots and comparisons
 
 ---
 
-**Last Updated**: 2025-10-15
+**Last Updated**: 2025-11-24
 **Project Location**: `/home/curtis/Games/StepMania/`
-**Status**: Phase 1 Complete ✅
+**Status**: ✅ All 4 Phases Complete

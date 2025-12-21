@@ -2,7 +2,7 @@
 
 ## Overview
 
-The new `generate_playlists.py` script replaces manual playlist curation with automated difficulty-tiered playlists based on ML-calculated ratings.
+The `generate_playlists.py` script automates creation of difficulty-tiered playlists based on ML-calculated ratings.
 
 ## Key Improvements Over Manual System
 
@@ -172,15 +172,15 @@ Possible additions:
 
 ## Comparison: Old vs New System
 
-| Feature | Old Manual System | New Automated System |
-|---------|------------------|---------------------|
-| Song count | 770 total vetted | 26K+ rated, auto-generated |
-| Difficulty tiers | 4 broad categories | 7 precise tiers |
-| Single/Double | Mixed, silent failures | Separate, guaranteed compatibility |
-| Maintenance | Manual vetting required | Automatic, regenerate anytime |
-| Precision | Difficulty names (HARD) | Calculated ratings (12.5) |
-| Coverage | Only vetted songs | All non-vetoed songs |
-| Updates | Manual re-vetting | Re-run script |
+| Feature          | Old Manual System       | New Automated System               |
+|------------------|-------------------------|------------------------------------|
+| Song count       | 770 total vetted        | 26K+ rated, auto-generated         |
+| Difficulty tiers | 4 broad categories      | 7 precise tiers                    |
+| Single/Double    | Mixed, silent failures  | Separate, guaranteed compatibility |
+| Maintenance      | Manual vetting required | Automatic, regenerate anytime      |
+| Precision        | Difficulty names (HARD) | Calculated ratings (12.5)          |
+| Coverage         | Only vetted songs       | All non-vetoed songs               |
+| Updates          | Manual re-vetting       | Re-run script                      |
 
 ## Tips
 
