@@ -70,17 +70,52 @@ class DatasetGenerator:
         self.dataset_rows = []
 
     def find_chart_files(self) -> List[Path]:
-        """Find all chart files in the songs directory."""
+        """
+        Find all chart files in the songs directory.
+        
+        Follows StepMania's file priority when multiple formats exist in the same directory:
+        1. SSC (highest priority)
+        2. SMA
+        3. SM
+        4. DWI
+        5. BMS
+        6. KSF (lowest priority)
+        
+        Only one file per song directory is loaded (the highest priority one).
+        """
         logger.info(f"Scanning {self.songs_dir} for chart files...")
 
-        chart_files = []
-        for ext in ['*.sm', '*.ssc', '*.dwi']:
+        # Priority order matching StepMania's NotesLoader::LoadFromDir
+        extensions = ['*.ssc', '*.sma', '*.sm', '*.dwi', '*.bms', '*.ksf']
+        
+        # Get all song directories (directories containing at least one simfile)
+        song_dirs = {}
+        for ext in extensions:
             found = list(self.songs_dir.rglob(ext))
-            chart_files.extend(found)
-            logger.info(f"  Found {len(found)} {ext} files")
+            for file_path in found:
+                song_dir = file_path.parent
+                song_dir_key = str(song_dir)
+                
+                # Only add if we haven't already found a higher-priority file for this directory
+                if song_dir_key not in song_dirs:
+                    song_dirs[song_dir_key] = file_path
+        
+        chart_files = list(song_dirs.values())
+        
+        # Log findings
+        format_counts = {}
+        for file_path in chart_files:
+            ext = file_path.suffix.lower()
+            format_counts[ext] = format_counts.get(ext, 0) + 1
+        
+        for ext in extensions:
+            ext_key = ext.replace('*', '')  # Remove wildcard
+            count = format_counts.get(ext_key, 0)
+            if count > 0:
+                logger.info(f"  Found {count} {ext} files")
 
         self.stats['total_files'] = len(chart_files)
-        logger.info(f"Total chart files found: {len(chart_files)}")
+        logger.info(f"Total chart files found: {len(chart_files)} (one per song directory)")
         return sorted(chart_files)
 
     def extract_pack_name(self, file_path: Path) -> str:
