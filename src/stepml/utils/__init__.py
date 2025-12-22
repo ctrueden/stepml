@@ -12,6 +12,15 @@ from .data_structures import (
 )
 from .scale_detector import ScaleDetector
 from .rating_normalizer import RatingNormalizer
+from .paths import (
+    get_stepml_root,
+    get_src_dir,
+    get_package_dir,
+    get_data_dir,
+    get_models_dir,
+    get_tests_dir,
+    get_fixtures_dir,
+)
 
 __all__ = [
     'ChartData',
@@ -23,4 +32,11 @@ __all__ = [
     'TimingEvent',
     'ScaleDetector',
     'RatingNormalizer',
+    'get_stepml_root',
+    'get_src_dir',
+    'get_package_dir',
+    'get_data_dir',
+    'get_models_dir',
+    'get_tests_dir',
+    'get_fixtures_dir',
 ]

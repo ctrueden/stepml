@@ -16,19 +16,16 @@ from pathlib import Path
 
 from stepml.parsers.sm_parser import parse_sm_file
 from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
+from stepml.utils import get_stepml_root, get_fixtures_dir
 
 
 def generate_baseline():
     """Generate baseline feature extractions for all test charts."""
-    # Setup paths - script is at src/stepml/generate_baseline.py
-    # Need to go up 2 levels to reach project root (stepml/)
-    script_dir = Path(__file__).parent  # stepml/ (package)
-    src_root = script_dir.parent  # src/
-    stepml_root = src_root.parent  # stepml/ (project root)
-    
+    # Setup paths
+    stepml_root = get_stepml_root()
     songs_dir = stepml_root.parent / "Songs"  # ../Songs
-    test_charts_path = stepml_root / "tests" / "fixtures" / "test_charts.json"
-    baseline_path = stepml_root / "tests" / "fixtures" / "baseline_features.json"
+    test_charts_path = get_fixtures_dir() / "test_charts.json"
+    baseline_path = get_fixtures_dir() / "baseline_features.json"
 
     # Load test charts config
     print(f"Loading test charts from: {test_charts_path}")

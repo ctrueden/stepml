@@ -25,6 +25,7 @@ from stepml.features.feature_extractor import FeatureExtractor
 from stepml.utils.data_structures import ChartData
 from stepml.utils.scale_detector import ScaleDetector
 from stepml.utils.performance_enrichment import PerformanceEnricher
+from stepml.utils import get_stepml_root, get_data_dir
 
 
 logging.basicConfig(
@@ -383,22 +384,25 @@ def main():
     parser = argparse.ArgumentParser(
         description='Generate ML dataset from StepMania chart collection'
     )
+    stepml_root = get_stepml_root()
+    data_dir = get_data_dir()
+    
     parser.add_argument(
         '--songs-dir',
         type=Path,
-        default=Path(__file__).parent.parent / 'Songs',
+        default=stepml_root.parent / 'Songs',
         help='Path to Songs directory (default: ../Songs)'
     )
     parser.add_argument(
         '--output-dir',
         type=Path,
-        default=Path(__file__).parent / 'data' / 'processed',
+        default=data_dir / 'processed',
         help='Output directory for dataset files (default: ./data/processed)'
     )
     parser.add_argument(
         '--stats-file',
         type=Path,
-        default=Path(__file__).parent.parent / 'Save' / 'LocalProfiles' / '00000000' / 'Stats.xml',
+        default=stepml_root.parent / 'Save' / 'LocalProfiles' / '00000000' / 'Stats.xml',
         help='Path to Stats.xml for performance enrichment (default: ../Save/LocalProfiles/00000000/Stats.xml)'
     )
     parser.add_argument(

@@ -15,6 +15,7 @@ from pathlib import Path
 import pandas as pd
 
 from stepml.models.baseline_models import LinearRegressionModel, RandomForestModel
+from stepml.utils import get_data_dir
 
 
 logging.basicConfig(
@@ -28,16 +29,17 @@ def main():
     parser = argparse.ArgumentParser(
         description='Train baseline models for difficulty prediction'
     )
+    data_dir = get_data_dir()
     parser.add_argument(
         '--dataset',
         type=Path,
-        default=Path(__file__).parent / 'data' / 'processed' / 'dataset.parquet',
+        default=data_dir / 'processed' / 'dataset.parquet',
         help='Path to dataset file (default: data/processed/dataset.parquet)'
     )
     parser.add_argument(
         '--output-dir',
         type=Path,
-        default=Path(__file__).parent / 'data' / 'models',
+        default=data_dir / 'models',
         help='Output directory for trained models (default: data/models)'
     )
     parser.add_argument(

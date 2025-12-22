@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from stepml.parsers.sm_parser import parse_sm_file
 from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
 from stepml.utils.data_structures import ChartData, NoteData
+from stepml.utils import get_fixtures_dir
 from stepml.config import get_songs_dir
 
 
@@ -26,7 +27,7 @@ def songs_dir() -> Path:
 @pytest.fixture(scope="session")
 def test_charts_config() -> Dict[str, Any]:
     """Load the test charts configuration."""
-    config_path = Path(__file__).parent / "fixtures" / "test_charts.json"
+    config_path = get_fixtures_dir() / "test_charts.json"
     with open(config_path, 'r') as f:
         return json.load(f)
 
@@ -34,7 +35,7 @@ def test_charts_config() -> Dict[str, Any]:
 @pytest.fixture(scope="session")
 def baseline_features() -> Dict[str, Any]:
     """Load the baseline feature extractions."""
-    baseline_path = Path(__file__).parent / "fixtures" / "baseline_features.json"
+    baseline_path = get_fixtures_dir() / "baseline_features.json"
     with open(baseline_path, 'r') as f:
         return json.load(f)
 

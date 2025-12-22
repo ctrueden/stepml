@@ -8,6 +8,7 @@ import json
 import pandas as pd
 from pathlib import Path
 from stepml.models.baseline_models import RandomForestModel
+from stepml.utils import get_stepml_root, get_data_dir
 
 
 def convert_chart_type_to_stepmania_format(chart_type: str) -> str:
@@ -174,22 +175,23 @@ def main():
     parser = argparse.ArgumentParser(
         description='Generate calculated difficulty ratings for all charts'
     )
+    data_dir = get_data_dir()
     parser.add_argument(
         '--dataset',
         type=Path,
-        default=Path(__file__).parent / 'data' / 'processed' / 'dataset.parquet',
+        default=data_dir / 'processed' / 'dataset.parquet',
         help='Path to dataset file'
     )
     parser.add_argument(
         '--model-dir',
         type=Path,
-        default=Path(__file__).parent / 'data' / 'models',
+        default=data_dir / 'models',
         help='Directory containing trained model'
     )
     parser.add_argument(
         '--output',
         type=Path,
-        default=Path(__file__).parent / 'data' / 'calculated_ratings' / 'calculated_ratings.json',
+        default=data_dir / 'calculated_ratings' / 'calculated_ratings.json',
         help='Output path for rating mappings'
     )
 

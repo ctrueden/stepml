@@ -4,9 +4,9 @@ Example script demonstrating multi-format support in Phase 3.
 Shows how to use the universal parser to process .sm, .ssc, and .dwi files
 with automatic format detection.
 """
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from stepml.parsers.universal_parser import parse_chart_file, detect_format, is_supported_format

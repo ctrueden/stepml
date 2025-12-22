@@ -11,9 +11,12 @@ Demonstrates:
 import sys
 from pathlib import Path
 
-from models.baseline_models import LinearRegressionModel, RandomForestModel
-from parsers.universal_parser import parse_chart_file
-from features.feature_extractor import FeatureExtractor
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from stepml.models.baseline_models import LinearRegressionModel, RandomForestModel
+from stepml.parsers.universal_parser import parse_chart_file
+from stepml.features.feature_extractor import FeatureExtractor
+from stepml.utils import get_models_dir
 
 
 def predict_chart_difficulty(chart_path: str, models_dir: Path):
@@ -114,7 +117,7 @@ def main():
         sys.exit(1)
 
     chart_path = sys.argv[1]
-    models_dir = Path(__file__).parent / 'data' / 'models'
+    models_dir = get_models_dir()
 
     if not Path(chart_path).exists():
         print(f"Error: Chart file not found: {chart_path}")

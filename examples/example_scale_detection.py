@@ -4,9 +4,9 @@ Example usage of Phase 2: Scale Detection and Rating Normalization
 Demonstrates automatic scale detection and rating normalization across
 different StepMania song packs (Classic DDR, Modern DDR, ITG).
 """
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from stepml.parsers.sm_parser import parse_sm_file
