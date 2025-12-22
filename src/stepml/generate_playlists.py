@@ -294,7 +294,7 @@ class PlaylistGenerator:
         output_file = self.courses_dir / f"{style}-{avg_rating:02d}-{tier_name.upper()}.songs"
 
         with open(output_file, "w") as f:
-            f.write(f"#COURSE:[Workout] Random {style}-{avg_rating:02d}-{tier_name.upper()};\n")
+            f.write(f"#COURSE:{style} {avg_rating:02d} {tier_name.upper()};\n")
             for _, row in selected.iterrows():
                 normalized = self._normalize_path(row["file_path"])
                 difficulty = row["difficulty"].upper()
@@ -335,16 +335,24 @@ class PlaylistGenerator:
                     if line.startswith("#COURSE:"):
                         course_name = line
                     elif line.startswith("#SONG:"):
-                        # Strip trailing comment if present (e.g., "  # 12.5")
-                        # Split on "  #" to preserve the #SONG: prefix
-                        song_line = line.split("  #")[0].strip()
-                        songs.append(song_line)
+                        songs.append(line)
 
             if not songs or not course_name:
                 continue
 
             base_name = songs_file.stem
             print(f"  {base_name}: {len(songs)} songs")
+
+            # Generate "ENDLESS" course with all songs in repeat mode
+            # (no need to shuffle because endless mode already does)
+            crs_file = self.courses_dir / f"Endless-{base_name}.crs"
+            with open(crs_file, "w") as f:
+                course_label = course_name \
+                    .replace(";", " ENDLESS;\n")
+                f.write(course_label)
+                for song in songs:
+                    f.write(song + "\n")
+                f.write("#REPEAT:YES;\n")
 
             # Generate variants
             for i in range(1, num_variants + 1):
@@ -354,17 +362,9 @@ class PlaylistGenerator:
                 crs_file = self.courses_dir / f"Random-{base_name}-{i}.crs"
                 with open(crs_file, "w") as f:
                     # Modify course name to include variant number
-                    f.write(course_name.replace(";", f" #{i};") + "\n")
+                    f.write(course_name.replace(";", f" RANDOM {i};\n"))
                     for song in selected:
                         f.write(song + "\n")
-
-            # Generate "ALL" variant with all songs shuffled
-            random.shuffle(songs)
-            crs_file = self.courses_dir / f"Random-{base_name}-ALL.crs"
-            with open(crs_file, "w") as f:
-                f.write(course_name.replace(";", " ALL;") + "\n")
-                for song in songs:
-                    f.write(song + "\n")
 
 
 def main():
@@ -392,7 +392,7 @@ def main():
     parser.add_argument(
         "--favorites-single",
         type=Path,
-        default=get_courses_dir() / "Vetted/Favorites.songs",
+        default=get_courses_dir() / "Vetted/Single-Favorites.songs",
         help="Path to single favorites list (optional)",
     )
     parser.add_argument(
