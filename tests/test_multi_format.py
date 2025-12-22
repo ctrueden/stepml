@@ -4,9 +4,6 @@ Comprehensive tests for multi-format parser support (Phase 3).
 Tests .sm, .ssc, and .dwi parsers along with universal parser.
 """
 import pytest
-from pathlib import Path
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from stepml.parsers.sm_parser import parse_sm_file
 from stepml.parsers.ssc_parser import parse_ssc_file

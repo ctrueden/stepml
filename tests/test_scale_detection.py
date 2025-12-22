@@ -2,9 +2,6 @@
 Tests for scale detection and rating normalization.
 """
 import pytest
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from stepml.utils.scale_detector import ScaleDetector
 from stepml.utils.rating_normalizer import RatingNormalizer

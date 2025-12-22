@@ -4,10 +4,6 @@ Comprehensive tests for DWI parser.
 Tests the fix for DOUBLE chart parsing and validates note counting.
 """
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from stepml.parsers.dwi_parser import parse_dwi_file
 
 

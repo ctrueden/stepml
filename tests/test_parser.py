@@ -5,9 +5,6 @@ These tests ensure the parser continues to correctly extract metadata,
 timing data, and note information from SM files.
 """
 import pytest
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from stepml.parsers.sm_parser import parse_sm_file
 from stepml.utils.data_structures import ChartData, DifficultyType, ChartType

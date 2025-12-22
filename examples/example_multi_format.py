@@ -5,9 +5,6 @@ Shows how to use the universal parser to process .sm, .ssc, and .dwi files
 with automatic format detection.
 """
 import os
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from stepml.parsers.universal_parser import parse_chart_file, detect_format, is_supported_format
 from stepml.features.feature_extractor import FeatureExtractor

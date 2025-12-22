@@ -8,10 +8,7 @@ Demonstrates:
 4. Analyzing feature contributions
 """
 
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from stepml.models.baseline_models import LinearRegressionModel, RandomForestModel
 from stepml.parsers.universal_parser import parse_chart_file

@@ -2,14 +2,10 @@
 Pytest configuration and shared fixtures for StepMania parser tests.
 """
 import json
-import sys
 from pathlib import Path
 from typing import Dict, List, Any
 
 import pytest
-
-# Add src directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from stepml.parsers.sm_parser import parse_sm_file
 from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
