@@ -62,9 +62,9 @@ def test_castlevania():
     print(f"SINGLE Medium (ANOTHER): {another.total_notes} notes")
     assert 380 <= another.total_notes <= 410, f"Expected ~397 notes, got {another.total_notes}"
 
-    # Test MANIAC
-    maniac = [c for c in dwi.charts if c.difficulty.value == 'Challenge'][0]
-    print(f"SINGLE Challenge (MANIAC): {maniac.total_notes} notes (rating {maniac.rating})")
+    # Test MANIAC (maps to Hard difficulty)
+    maniac = [c for c in dwi.charts if c.difficulty.value == 'Hard'][0]
+    print(f"SINGLE Hard (MANIAC): {maniac.total_notes} notes (rating {maniac.rating})")
     assert 490 <= maniac.total_notes <= 520, f"Expected ~509 notes, got {maniac.total_notes}"
 
     # Verify it's properly encoded with jumps

@@ -17,14 +17,25 @@ class DWIParser:
     """Parser for DanceWith Intensity .dwi format files."""
 
     # Map DWI difficulty names to our enum
+    # Based on ITGMania's NotesLoaderDWI.cpp DwiCompatibleStringToDifficulty
     DIFFICULTY_MAP = {
+        "beginner": DifficultyType.EASY,
         "basic": DifficultyType.EASY,
-        "another": DifficultyType.MEDIUM,
-        "maniac": DifficultyType.CHALLENGE,
         "easy": DifficultyType.EASY,
+        "light": DifficultyType.EASY,
         "medium": DifficultyType.MEDIUM,
+        "another": DifficultyType.MEDIUM,
+        "trick": DifficultyType.MEDIUM,
+        "standard": DifficultyType.MEDIUM,
+        "difficult": DifficultyType.MEDIUM,
         "hard": DifficultyType.HARD,
-        "smaniac": DifficultyType.CHALLENGE,  # Some DWI files use this
+        "ssr": DifficultyType.HARD,
+        "maniac": DifficultyType.HARD,  # MANIAC = HARD, not CHALLENGE
+        "heavy": DifficultyType.HARD,
+        "smaniac": DifficultyType.CHALLENGE,  # S-MANIAC = CHALLENGE
+        "challenge": DifficultyType.CHALLENGE,
+        "expert": DifficultyType.CHALLENGE,
+        "oni": DifficultyType.CHALLENGE,
     }
 
     def __init__(self):
