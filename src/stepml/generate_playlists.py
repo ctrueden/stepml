@@ -359,6 +359,19 @@ class PlaylistGenerator:
                 random.shuffle(songs)
                 selected = songs[:course_length]
 
+                # Stable sort by difficulty (ascending)
+                def get_difficulty_key(song_line):
+                    tokens = song_line.split(" # ")
+                    if len(tokens) > 1:
+                        try:
+                            difficulty = float(tokens[1].strip())
+                            return (difficulty, song_line)
+                        except ValueError:
+                            return (float('inf'), song_line)
+                    return (float('inf'), song_line)
+
+                selected = sorted(selected, key=get_difficulty_key)
+
                 crs_file = self.courses_dir / f"Random-{base_name}-{i}.crs"
                 with open(crs_file, "w") as f:
                     # Modify course name to include variant number
