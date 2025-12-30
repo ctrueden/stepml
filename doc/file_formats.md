@@ -2,14 +2,14 @@
 
 ## Format Comparison
 
-| Feature | .sm | .ssc | .dwi |
-|---------|-----|------|------|
-| Version Tag | No | Yes (#VERSION) | No |
-| Timing Offset | #OFFSET | #OFFSET | #GAP |
-| Chart Separator | #NOTES | #NOTEDATA | #SINGLE/DOUBLE:difficulty:rating: |
-| Note Encoding | 4-digit columns | 4-digit columns | Compressed single digits |
-| Measure Separator | Comma (,) | Comma (,) | None |
-| Advanced Timing | Limited | Full (#DELAYS, #WARPS, etc.) | Limited |
+| Feature           | .sm             | .ssc                         | .dwi                              |
+|-------------------|-----------------|------------------------------|-----------------------------------|
+| Version Tag       | No              | Yes (#VERSION)               | No                                |
+| Timing Offset     | #OFFSET         | #OFFSET                      | #GAP                              |
+| Chart Separator   | #NOTES          | #NOTEDATA                    | #SINGLE/DOUBLE:difficulty:rating: |
+| Note Encoding     | 4-digit columns | 4-digit columns              | Compressed single digits          |
+| Measure Separator | Comma (,)       | Comma (,)                    | None                              |
+| Advanced Timing   | Limited         | Full (#DELAYS, #WARPS, etc.) | Limited                           |
 
 ## .ssc Format (StepMania 5)
 
@@ -65,11 +65,12 @@
 
 ### Difficulty Mapping
 
-| DWI Name | Standard Name | Enum |
-|----------|---------------|------|
-| BASIC | Easy | DifficultyType.EASY |
-| ANOTHER | Medium/Hard | DifficultyType.MEDIUM or HARD |
-| MANIAC | Challenge | DifficultyType.CHALLENGE |
+| DWI Name | Standard Name | Enum                     |
+|----------|---------------|--------------------------|
+| BASIC    | Easy          | DifficultyType.EASY      |
+| ANOTHER  | Medium        | DifficultyType.MEDIUM    |
+| MANIAC   | Hard          | DifficultyType.HARD      |
+| ONI      | Challenge     | DifficultyType.CHALLENGE |
 
 ### Note Encoding
 

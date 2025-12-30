@@ -68,13 +68,13 @@ Machine learning-based system for analyzing StepMania step charts and providing 
 
 Validated on real charts from the song collection:
 
-| Chart | Difficulty | Rating | NPS | Peak Density | Result |
-|-------|-----------|--------|-----|--------------|---------|
-| Goin' Under | Beginner | 1 | 0.80 | 0.25 | ✅ Pass |
-| Goin' Under | Easy | 3 | 1.85 | 0.88 | ✅ Pass |
-| Goin' Under | Medium | 6 | 2.96 | 1.38 | ✅ Pass |
-| Goin' Under | Hard | 8 | 3.97 | 2.00 | ✅ Pass |
-| Goin' Under | Challenge | 10 | 5.33 | 2.12 | ✅ Pass |
+| Chart       | Difficulty | Rating | NPS  | Peak Density | Result  |
+|-------------|------------|--------|------|--------------|---------|
+| Goin' Under | Beginner   | 1      | 0.80 | 0.25         | ✅ Pass |
+| Goin' Under | Easy       | 3      | 1.85 | 0.88         | ✅ Pass |
+| Goin' Under | Medium     | 6      | 2.96 | 1.38         | ✅ Pass |
+| Goin' Under | Hard       | 8      | 3.97 | 2.00         | ✅ Pass |
+| Goin' Under | Challenge  | 10     | 5.33 | 2.12         | ✅ Pass |
 
 **Observations**:
 - Clear linear progression in NPS from beginner to challenge
@@ -128,11 +128,11 @@ Validated on real charts from the song collection:
 
 Validated on real song collection (11/12 packs, 91.7% accuracy):
 
-| Scale Type | Packs Tested | Detection Rate |
-|------------|--------------|----------------|
-| Classic DDR | DDR 1st-5th Mix, EXTREME | 100% (4/4) |
-| Modern DDR | DDR A/A20, 2013/2014 | 100% (4/4) |
-| ITG | ITG 1/2, Rebirth | 100% (3/3) |
+| Scale Type  | Packs Tested             | Detection Rate |
+|-------------|--------------------------|----------------|
+| Classic DDR | DDR 1st-5th Mix, EXTREME | 100% (4/4)     |
+| Modern DDR  | DDR A/A20, 2013/2014     | 100% (4/4)     |
+| ITG         | ITG 1/2, Rebirth         | 100% (3/3)     |
 
 **Key Conversions**:
 - Classic DDR 9 → Unified 14.0 (≈ Modern DDR 14)
@@ -196,12 +196,12 @@ Validated on real song collection (11/12 packs, 91.7% accuracy):
 
 **Format Coverage**: 100% of collection
 
-| Format | Files | Parser | Status |
-|--------|-------|--------|--------|
-| .sm    | 3,283 | SMParser | ✅ Working |
-| .ssc   | 402   | SSCParser | ✅ Working |
-| .dwi   | 649   | DWIParser | ✅ Working |
-| **Total** | **4,334** | **100%** | **✅ Complete** |
+| Format    | Files     | Parser    | Status          |
+|-----------|-----------|-----------|-----------------|
+| .sm       | 3,283     | SMParser  | ✅ Working      |
+| .ssc      | 402       | SSCParser | ✅ Working      |
+| .dwi      | 649       | DWIParser | ✅ Working      |
+| **Total** | **4,334** | **100%**  | **✅ Complete** |
 
 **Test Coverage**:
 - SSC Parser: 7 tests ✅
