@@ -12,7 +12,7 @@ consistently scaled ratings across all stepcharts in your collection.
 
 ## Quick start
 
-* Download the calculated ratings the
+* Download the calculated ratings from the
   [Releases](https://github.com/ctrueden/stepml/releases) page.
 
 * Clone my [fork of itgmania](https://github.com/ctrueden/itgmania)
@@ -51,7 +51,8 @@ All copyright disclaimed; see UNLICENSE.
 
 This is a personal project I created to scratch my own itch.
 If you need help with it, your first line of attack should be
-feeding the codebase into an LLM and asking it for clarification.
+[feeding the codebase into an LLM](https://code.claude.com/docs/en/quickstart)
+and asking it for clarification.
 
 If you are still stuck after doing that, you are welcome to file an
 issue and I'll try to help. PRs are also welcome, although for big
