@@ -14,6 +14,8 @@ class RatingNormalizer:
 
     The unified scale uses Modern DDR (1-20) as the reference, since it provides
     the finest granularity and covers the full difficulty spectrum.
+
+    Supports configurable target normalization scales (Classic DDR, Modern DDR, or ITG).
     """
 
     # Conversion tables: source_scale -> {source_rating: unified_rating}
@@ -68,8 +70,16 @@ class RatingNormalizer:
         v: k for k, v in MODERN_DDR_TO_UNIFIED.items()
     }
 
-    def __init__(self):
-        """Initialize the rating normalizer."""
+    def __init__(self, target_scale: ScaleType = ScaleType.MODERN_DDR):
+        """
+        Initialize the rating normalizer.
+
+        Args:
+            target_scale: The scale to normalize ratings to (default: Modern DDR 1-20).
+                         Options: ScaleType.CLASSIC_DDR (1-10), ScaleType.MODERN_DDR (1-20),
+                         or ScaleType.ITG (1-12).
+        """
+        self.target_scale = target_scale
         self.conversion_tables = {
             ScaleType.CLASSIC_DDR: self.CLASSIC_DDR_TO_UNIFIED,
             ScaleType.ITG: self.ITG_TO_UNIFIED,
@@ -85,7 +95,7 @@ class RatingNormalizer:
         total_notes: Optional[int] = None
     ) -> float:
         """
-        Normalize a rating from a source scale to the unified scale.
+        Normalize a rating from a source scale to the target scale.
 
         Args:
             rating: Original rating value
@@ -95,7 +105,7 @@ class RatingNormalizer:
             total_notes: Optional step count for metric-based refinement
 
         Returns:
-            Normalized rating on unified scale (1-20)
+            Normalized rating on target scale (configured in __init__, default 1-20 Modern DDR)
         """
         if source_scale == ScaleType.UNKNOWN:
             # No conversion possible, return as-is
@@ -106,20 +116,29 @@ class RatingNormalizer:
 
         conversion_table = self.conversion_tables[source_scale]
 
+        # Step 1: Convert to unified scale (Modern DDR 1-20)
+        unified_rating = None
+
         # Special refinement for Classic DDR 10s using metrics
         if source_scale == ScaleType.CLASSIC_DDR and rating == 10 and notes_per_second is not None:
-            return self._refine_classic_10(notes_per_second, total_notes)
-
+            unified_rating = self._refine_classic_10(notes_per_second, total_notes)
         # Direct lookup if rating exists in table
-        if rating in conversion_table:
-            return conversion_table[rating]
-
+        elif rating in conversion_table:
+            unified_rating = conversion_table[rating]
         # Interpolate if requested
-        if interpolate:
-            return self._interpolate_rating(rating, conversion_table)
+        elif interpolate:
+            unified_rating = self._interpolate_rating(rating, conversion_table)
+        else:
+            # Fall back to identity mapping
+            unified_rating = float(rating)
 
-        # Fall back to identity mapping
-        return float(rating)
+        # Step 2: Convert from unified scale to target scale (if different)
+        if self.target_scale == ScaleType.MODERN_DDR:
+            # Already in target scale
+            return unified_rating
+        else:
+            # Convert unified → target scale
+            return float(self.denormalize(unified_rating, self.target_scale))
 
     def _refine_classic_10(
         self,

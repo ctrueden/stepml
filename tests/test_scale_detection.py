@@ -238,6 +238,101 @@ class TestRatingNormalizer:
         normalized = normalizer.normalize(7, ScaleType.UNKNOWN)
         assert normalized == 7.0
 
+    def test_configurable_target_scale_itg(self):
+        """Test normalization to ITG target scale."""
+        normalizer_itg = RatingNormalizer(target_scale=ScaleType.ITG)
+
+        # Classic DDR to ITG conversions
+        # Classic 10 → Modern 14.5 → ITG 9 (14.5 closer to 14.0 than 15.5)
+        assert normalizer_itg.normalize(10, ScaleType.CLASSIC_DDR) == 9.0
+        # Classic 8 → Modern 12.0 → ITG 8 (12.0 closer to 12.5 than 11.0)
+        assert normalizer_itg.normalize(8, ScaleType.CLASSIC_DDR) == 8.0
+        # Classic 9 → Modern 13.0 → ITG 8 (13.0 closer to 12.5 than 14.0)
+        assert normalizer_itg.normalize(9, ScaleType.CLASSIC_DDR) == 8.0
+
+        # Modern DDR to ITG conversions
+        # Modern 14.0 → ITG 9
+        assert normalizer_itg.normalize(14, ScaleType.MODERN_DDR) == 9.0
+        # Modern 12.5 → ITG 8
+        assert normalizer_itg.normalize(12, ScaleType.MODERN_DDR) == 8.0
+
+        # ITG identity (should map to itself)
+        for rating in [1, 5, 8, 9, 10, 12]:
+            normalized = normalizer_itg.normalize(rating, ScaleType.ITG)
+            assert normalized == float(rating), f"ITG {rating} → ITG should be identity"
+
+    def test_configurable_target_scale_classic_ddr(self):
+        """Test normalization to Classic DDR target scale."""
+        normalizer_classic = RatingNormalizer(target_scale=ScaleType.CLASSIC_DDR)
+
+        # ITG to Classic DDR conversions
+        # ITG 9 → Modern 14.0 → Classic 10 (14.0 closest to 14.5)
+        assert normalizer_classic.normalize(9, ScaleType.ITG) == 10.0
+        # ITG 8 → Modern 12.5 → Classic 8 (12.5 equidistant from 12.0 and 13.0, picks 8)
+        assert normalizer_classic.normalize(8, ScaleType.ITG) == 8.0
+        # ITG 7 → Modern 11.0 → Classic 7 (11.0 closest to 10.5)
+        assert normalizer_classic.normalize(7, ScaleType.ITG) == 7.0
+
+        # Modern DDR to Classic DDR conversions
+        # Modern 13.0 → Classic 9
+        assert normalizer_classic.normalize(13, ScaleType.MODERN_DDR) == 9.0
+        # Modern 10.5 → Classic 7
+        assert normalizer_classic.normalize(10.5, ScaleType.MODERN_DDR) == 7.0
+
+        # Classic DDR identity (should map to itself)
+        for rating in [1, 5, 7, 8, 9, 10]:
+            normalized = normalizer_classic.normalize(rating, ScaleType.CLASSIC_DDR)
+            assert normalized == float(rating), f"Classic {rating} → Classic should be identity"
+
+    def test_configurable_target_scale_modern_ddr(self):
+        """Test that default Modern DDR target scale still works correctly."""
+        normalizer_modern = RatingNormalizer(target_scale=ScaleType.MODERN_DDR)
+
+        # Should behave identically to default normalizer
+        # Classic to Modern
+        assert normalizer_modern.normalize(10, ScaleType.CLASSIC_DDR) == 14.5
+        assert normalizer_modern.normalize(8, ScaleType.CLASSIC_DDR) == 12.0
+
+        # ITG to Modern
+        assert normalizer_modern.normalize(9, ScaleType.ITG) == 14.0
+        assert normalizer_modern.normalize(8, ScaleType.ITG) == 12.5
+
+        # Modern identity
+        for rating in range(1, 21):
+            normalized = normalizer_modern.normalize(rating, ScaleType.MODERN_DDR)
+            assert normalized == float(rating), f"Modern {rating} should map to itself"
+
+    def test_cross_scale_conversion_symmetry(self):
+        """Test that cross-scale conversions maintain reasonable symmetry."""
+        normalizer_itg = RatingNormalizer(target_scale=ScaleType.ITG)
+        normalizer_classic = RatingNormalizer(target_scale=ScaleType.CLASSIC_DDR)
+
+        # Classic 10 → ITG and ITG 9 → Classic should be roughly equivalent difficulty
+        classic_to_itg = normalizer_itg.normalize(10, ScaleType.CLASSIC_DDR)
+        itg_to_classic = normalizer_classic.normalize(9, ScaleType.ITG)
+
+        # Both represent approximately the same difficulty level
+        assert classic_to_itg == 9.0  # Classic 10 → Modern 14.5 → ITG 9
+        assert itg_to_classic == 10.0  # ITG 9 → Modern 14.0 → Classic 10
+
+        # Verify round-trip consistency (Classic → Modern → ITG → Modern → Classic)
+        normalizer_modern = RatingNormalizer(target_scale=ScaleType.MODERN_DDR)
+        classic_8_to_modern = normalizer_modern.normalize(8, ScaleType.CLASSIC_DDR)  # 12.0
+        modern_12_to_itg = normalizer_itg.normalize(12, ScaleType.MODERN_DDR)  # 8.0
+        itg_8_to_modern = normalizer_modern.normalize(8, ScaleType.ITG)  # 12.5
+        # Should be close (within rounding)
+        assert abs(classic_8_to_modern - itg_8_to_modern) <= 1.0
+
+    def test_configurable_target_scale_with_interpolation(self):
+        """Test that interpolation works correctly with configurable target scales."""
+        normalizer_itg = RatingNormalizer(target_scale=ScaleType.ITG)
+
+        # Test Classic DDR interpolation to ITG
+        # Classic 8.5 should interpolate between 8→12.0 and 9→13.0
+        # Unified: 12.5, then to ITG should be ~8
+        normalized = normalizer_itg.normalize(8.5, ScaleType.CLASSIC_DDR, interpolate=True)
+        assert 8.0 <= normalized <= 9.0, f"Interpolated value {normalized} out of expected range"
+
 
 @pytest.mark.integration
 class TestScaleDetectionIntegration:

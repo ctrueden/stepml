@@ -38,10 +38,15 @@ class DWIParser:
         "oni": DifficultyType.CHALLENGE,
     }
 
-    def __init__(self):
-        """Initialize the DWI parser."""
+    def __init__(self, target_scale: ScaleType = ScaleType.MODERN_DDR):
+        """
+        Initialize the DWI parser.
+
+        Args:
+            target_scale: The scale to normalize ratings to (default: Modern DDR 1-20).
+        """
         self.scale_detector = ScaleDetector()
-        self.rating_normalizer = RatingNormalizer()
+        self.rating_normalizer = RatingNormalizer(target_scale)
 
     def parse_file(self, filepath: str) -> ChartData:
         """
@@ -448,15 +453,16 @@ class DWIParser:
         return chart.total_notes / duration_seconds
 
 
-def parse_dwi_file(filepath: str) -> ChartData:
+def parse_dwi_file(filepath: str, target_scale: ScaleType = ScaleType.MODERN_DDR) -> ChartData:
     """
     Convenience function to parse a .dwi file.
 
     Args:
         filepath: Path to the .dwi file
+        target_scale: The scale to normalize ratings to (default: Modern DDR 1-20)
 
     Returns:
         ChartData object
     """
-    parser = DWIParser()
+    parser = DWIParser(target_scale)
     return parser.parse_file(filepath)

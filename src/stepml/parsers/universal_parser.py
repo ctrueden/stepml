@@ -30,7 +30,7 @@ class UniversalParser:
         """Initialize the universal parser."""
         pass
 
-    def parse_file(self, filepath: Union[str, Path]) -> ChartData:
+    def parse_file(self, filepath: Union[str, Path], target_scale: 'ScaleType' = None) -> ChartData:
         """
         Parse a chart file and return ChartData.
 
@@ -39,6 +39,7 @@ class UniversalParser:
 
         Args:
             filepath: Path to the chart file
+            target_scale: The scale to normalize ratings to (default: Modern DDR 1-20)
 
         Returns:
             ChartData object with parsed information
@@ -47,6 +48,10 @@ class UniversalParser:
             FileNotFoundError: If file doesn't exist
             ValueError: If file format is not supported
         """
+        from stepml.utils.data_structures import ScaleType
+        if target_scale is None:
+            target_scale = ScaleType.MODERN_DDR
+
         filepath = Path(filepath)
 
         if not filepath.exists():
@@ -57,11 +62,11 @@ class UniversalParser:
 
         # Route to appropriate parser
         if ext == '.sm':
-            return parse_sm_file(str(filepath))
+            return parse_sm_file(str(filepath), target_scale)
         elif ext == '.ssc':
-            return parse_ssc_file(str(filepath))
+            return parse_ssc_file(str(filepath), target_scale)
         elif ext == '.dwi':
-            return parse_dwi_file(str(filepath))
+            return parse_dwi_file(str(filepath), target_scale)
         else:
             raise ValueError(
                 f"Unsupported file format: {ext}\n"
@@ -96,7 +101,7 @@ class UniversalParser:
         return self.SUPPORTED_FORMATS.get(ext, "Unknown")
 
 
-def parse_chart_file(filepath: Union[str, Path]) -> ChartData:
+def parse_chart_file(filepath: Union[str, Path], target_scale: 'ScaleType' = None) -> ChartData:
     """
     Convenience function to parse any supported chart file.
 
@@ -104,6 +109,7 @@ def parse_chart_file(filepath: Union[str, Path]) -> ChartData:
 
     Args:
         filepath: Path to the chart file (.sm, .ssc, or .dwi)
+        target_scale: The scale to normalize ratings to (default: Modern DDR 1-20)
 
     Returns:
         ChartData object
@@ -117,8 +123,11 @@ def parse_chart_file(filepath: Union[str, Path]) -> ChartData:
         >>> print(f"Format: {chart.format}")
         >>> print(f"Charts: {len(chart.charts)}")
     """
+    from stepml.utils.data_structures import ScaleType
+    if target_scale is None:
+        target_scale = ScaleType.MODERN_DDR
     parser = UniversalParser()
-    return parser.parse_file(filepath)
+    return parser.parse_file(filepath, target_scale)
 
 
 def detect_format(filepath: Union[str, Path]) -> str:

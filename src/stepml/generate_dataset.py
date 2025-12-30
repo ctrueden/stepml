@@ -22,7 +22,7 @@ import pandas as pd
 
 from stepml.parsers.universal_parser import parse_chart_file
 from stepml.features.feature_extractor import FeatureExtractor
-from stepml.utils.data_structures import ChartData
+from stepml.utils.data_structures import ChartData, ScaleType
 from stepml.utils.scale_detector import ScaleDetector
 from stepml.utils.performance_enrichment import PerformanceEnricher
 from stepml.utils import get_stepml_root, get_data_dir
@@ -38,9 +38,11 @@ logger = logging.getLogger(__name__)
 class DatasetGenerator:
     """Generates ML-ready dataset from StepMania chart collection."""
 
-    def __init__(self, songs_dir: Path, output_dir: Path, stats_file: Optional[Path] = None):
+    def __init__(self, songs_dir: Path, output_dir: Path, stats_file: Optional[Path] = None,
+                 target_scale: ScaleType = ScaleType.MODERN_DDR):
         self.songs_dir = Path(songs_dir)
         self.output_dir = Path(output_dir)
+        self.target_scale = target_scale
         self.feature_extractor = FeatureExtractor()
         self.scale_detector = ScaleDetector()
 
@@ -134,7 +136,7 @@ class DatasetGenerator:
     def process_chart_file(self, file_path: Path) -> Optional[ChartData]:
         """Parse a single chart file."""
         try:
-            chart_data = parse_chart_file(str(file_path))
+            chart_data = parse_chart_file(str(file_path), self.target_scale)
             self.stats['successful_parses'] += 1
             return chart_data
         except Exception as e:
@@ -415,6 +417,13 @@ def main():
         action='store_true',
         help='Show progress for every file'
     )
+    parser.add_argument(
+        '--normalization-scale',
+        type=str,
+        choices=['classic_ddr', 'modern_ddr', 'itg'],
+        default='modern_ddr',
+        help='Target scale for rating normalization (default: modern_ddr). Options: classic_ddr (1-10), modern_ddr (1-20), itg (1-12)'
+    )
 
     args = parser.parse_args()
 
@@ -422,6 +431,15 @@ def main():
     if not args.songs_dir.exists():
         logger.error(f"Songs directory not found: {args.songs_dir}")
         sys.exit(1)
+
+    # Convert normalization scale string to ScaleType enum
+    scale_map = {
+        'classic_ddr': ScaleType.CLASSIC_DDR,
+        'modern_ddr': ScaleType.MODERN_DDR,
+        'itg': ScaleType.ITG,
+    }
+    target_scale = scale_map[args.normalization_scale]
+    logger.info(f"Using normalization scale: {args.normalization_scale} ({target_scale.value})")
 
     # Determine stats file (None if disabled or not found)
     stats_file = None
@@ -433,7 +451,7 @@ def main():
             logger.warning("Continuing without performance enrichment")
 
     # Generate dataset
-    generator = DatasetGenerator(args.songs_dir, args.output_dir, stats_file)
+    generator = DatasetGenerator(args.songs_dir, args.output_dir, stats_file, target_scale)
     df = generator.generate_dataset(verbose=args.verbose)
 
     if not df.empty:
