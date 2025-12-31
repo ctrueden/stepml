@@ -3,6 +3,8 @@ help:
 		clean - remove build files and directories\n\
 		lint  - run code formatters and linters\n\
 		test  - run automated test suite\n\
+		run   - compute calculated ratings for all rating scales\n\
+		dist  - build archive containing all calculated ratings\n\
 	"
 
 clean:
@@ -16,3 +18,9 @@ lint: check
 
 test: check
 	bin/test.sh
+
+run: check
+	bin/run.sh
+
+dist: check clean
+	bin/dist.sh
