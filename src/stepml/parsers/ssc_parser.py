@@ -58,9 +58,12 @@ class SSCParser:
         if not filepath.exists():
             raise FileNotFoundError(f"File not found: {filepath}")
 
-        # Read file content
+        # Read file content, stripping // comment lines
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
+            content = '\n'.join(
+                line for line in f.read().splitlines()
+                if not line.lstrip().startswith('//')
+            )
 
         # Create ChartData object
         chart_data = ChartData(

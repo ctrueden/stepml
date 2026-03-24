@@ -19,7 +19,7 @@ class DWIParser:
     # Map DWI difficulty names to our enum
     # Based on ITGMania's NotesLoaderDWI.cpp DwiCompatibleStringToDifficulty
     DIFFICULTY_MAP = {
-        "beginner": DifficultyType.EASY,
+        "beginner": DifficultyType.BEGINNER,
         "basic": DifficultyType.EASY,
         "easy": DifficultyType.EASY,
         "light": DifficultyType.EASY,
@@ -62,9 +62,12 @@ class DWIParser:
         if not filepath.exists():
             raise FileNotFoundError(f"File not found: {filepath}")
 
-        # Read file content
+        # Read file content, stripping // comment lines (DWI convention)
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
+            content = '\n'.join(
+                line for line in f.read().splitlines()
+                if not line.lstrip().startswith('//')
+            )
 
         # Create ChartData object
         chart_data = ChartData(
