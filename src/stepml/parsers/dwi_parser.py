@@ -231,9 +231,9 @@ class DWIParser:
             bpm: BPM for timing calculations
             chart_type: SINGLE or DOUBLE chart type
         """
-        # DWI typically uses 1/8th note resolution (8 subdivisions per beat)
-        # Each character represents 1/8th of a beat
-        beat_increment = 0.125  # 1/8th beat
+        # DWI uses 8 steps per measure (4/4 time), so each character = 4/8 = 0.5 beats
+        # (eighth-note resolution, 2 characters per beat, not 8)
+        beat_increment = 0.5
 
         # Strip all whitespace (spaces, newlines used as measure separators in
         # some DWI files) and '!' hold/freeze markers before parsing.

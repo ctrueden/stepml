@@ -94,11 +94,14 @@ def generate_ratings(dataset_path: Path, model_dir: Path, output_path: Path):
     print("LARGEST RATING ADJUSTMENTS (vs normalized rating)")
     print("=" * 80)
 
-    hdr = f"{'Title':<38} {'Diff':<10} {'Scale':<12} {'Raw':>4} {'Norm':>5} {'Calc':>5} {'Δ':>7}"
-    sep = "-" * 84
+    hdr = f"{'Title':<34} {'Steps':<17} {'Scale':<12} {'Raw':>4} {'Norm':>5} {'Calc':>5} {'Δ':>7}"
+    sep = "-" * 88
 
     def fmt_row(row):
-        return (f"{row['title'][:36]:<38} {row['difficulty'][:9]:<10} "
+        # Abbreviate "dance-single" → "single", "dance-double" → "double", etc.
+        ctype = row['chart_type'].removeprefix('dance-')
+        steps = f"{ctype}:{row['difficulty']}"
+        return (f"{row['title'][:32]:<34} {steps[:16]:<17} "
                 f"{row['detected_scale'][:11]:<12} "
                 f"{row['original_rating']:4.0f} {row['normalized_rating']:5.1f} "
                 f"{row['calculated_rating_rounded']:5.1f} {row['rating_delta']:+7.2f}")
