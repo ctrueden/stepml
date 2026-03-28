@@ -83,34 +83,57 @@ def generate_ratings(dataset_path: Path, model_dir: Path, output_path: Path):
     print(f"  Mean: {df['calculated_rating'].mean():.2f} ± {df['calculated_rating'].std():.2f}")
     print(f"  Median: {df['calculated_rating'].median():.2f}")
 
-    print(f"\nRating changes from original:")
-    df['rating_delta'] = df['calculated_rating'] - df['original_rating']
+    print(f"\nRating changes from normalized:")
+    df['rating_delta'] = df['calculated_rating'] - df['normalized_rating']
     print(f"  Mean change: {df['rating_delta'].mean():+.2f}")
     print(f"  Largest increase: {df['rating_delta'].max():+.2f}")
     print(f"  Largest decrease: {df['rating_delta'].min():+.2f}")
 
     # Show charts with biggest changes
     print("\n" + "=" * 80)
-    print("LARGEST RATING ADJUSTMENTS")
+    print("LARGEST RATING ADJUSTMENTS (vs normalized rating)")
     print("=" * 80)
 
+    hdr = f"{'Title':<38} {'Diff':<10} {'Scale':<12} {'Raw':>4} {'Norm':>5} {'Calc':>5} {'Δ':>7}"
+    sep = "-" * 84
+
+    def fmt_row(row):
+        return (f"{row['title'][:36]:<38} {row['difficulty'][:9]:<10} "
+                f"{row['detected_scale'][:11]:<12} "
+                f"{row['original_rating']:4.0f} {row['normalized_rating']:5.1f} "
+                f"{row['calculated_rating_rounded']:5.1f} {row['rating_delta']:+7.2f}")
+
     print("\nTop 10 rating increases:")
-    print(f"{'Title':<40} {'Diff':<10} {'Orig':>5} {'Calc':>5} {'Change':>7}")
-    print("-" * 80)
-    increases = df.nlargest(10, 'rating_delta')
-    for _, row in increases.iterrows():
-        print(f"{row['title'][:38]:<40} {row['difficulty'][:9]:<10} "
-              f"{row['original_rating']:5.0f} {row['calculated_rating_rounded']:5.1f} "
-              f"{row['rating_delta']:+7.2f}")
+    print(hdr)
+    print(sep)
+    for _, row in df.nlargest(10, 'rating_delta').iterrows():
+        print(fmt_row(row))
 
     print("\nTop 10 rating decreases:")
-    print(f"{'Title':<40} {'Diff':<10} {'Orig':>5} {'Calc':>5} {'Change':>7}")
-    print("-" * 80)
-    decreases = df.nsmallest(10, 'rating_delta')
-    for _, row in decreases.iterrows():
-        print(f"{row['title'][:38]:<40} {row['difficulty'][:9]:<10} "
-              f"{row['original_rating']:5.0f} {row['calculated_rating_rounded']:5.1f} "
-              f"{row['rating_delta']:+7.2f}")
+    print(hdr)
+    print(sep)
+    for _, row in df.nsmallest(10, 'rating_delta').iterrows():
+        print(fmt_row(row))
+
+    # Data quality warnings from dataset generation
+    stats_path = dataset_path.parent / 'generation_stats.json'
+    if stats_path.exists():
+        with open(stats_path) as f:
+            gen_stats = json.load(f)
+        warnings = gen_stats.get('data_warnings', [])
+        print("\n" + "=" * 80)
+        print(f"DATA QUALITY WARNINGS ({len(warnings)} total)")
+        print("=" * 80)
+        if warnings:
+            whdr = f"{'File':<50} {'Type':<14} {'Diff':<10} {'Rtg':>4}  Issue"
+            print(whdr)
+            print("-" * 84)
+            for w in warnings:
+                short_file = '/'.join(w['file'].replace('\\', '/').split('/')[-3:])
+                print(f"{short_file:<50} {w['chart_type']:<14} {w['difficulty']:<10}"
+                      f" {w['original_rating']:>4}  {w['issue']}")
+        else:
+            print("  None — all charts passed quality checks.")
 
     # Save full dataset with ratings
     print("\n" + "=" * 80)

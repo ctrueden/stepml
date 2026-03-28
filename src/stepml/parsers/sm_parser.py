@@ -1,9 +1,12 @@
 """
 Parser for StepMania .sm files.
 """
+import logging
 import re
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
+
+logger = logging.getLogger(__name__)
 
 from stepml.utils.data_structures import (
     ChartData, NoteData, TimingEvent, ChartType,
@@ -221,7 +224,31 @@ class SMParser:
             # Parse the note data
             self._parse_note_data(notes_data, note_data)
 
-            chart_data.charts.append(note_data)
+            # If a chart with the same type+difficulty already exists (e.g. a
+            # groove-radar-only dummy alongside the real chart), keep whichever
+            # has more notes.
+            existing = next(
+                (i for i, c in enumerate(chart_data.charts)
+                 if c.chart_type == chart_type and c.difficulty == difficulty),
+                None
+            )
+            if existing is not None:
+                kept = chart_data.charts[existing]
+                if note_data.total_notes > kept.total_notes:
+                    logger.warning(
+                        "Duplicate %s %s in %s — dropping %d-note entry, keeping %d-note entry",
+                        chart_type.value, difficulty.value, chart_data.filepath,
+                        kept.total_notes, note_data.total_notes
+                    )
+                    chart_data.charts[existing] = note_data
+                else:
+                    logger.warning(
+                        "Duplicate %s %s in %s — dropping %d-note entry, keeping %d-note entry",
+                        chart_type.value, difficulty.value, chart_data.filepath,
+                        note_data.total_notes, kept.total_notes
+                    )
+            else:
+                chart_data.charts.append(note_data)
 
     def _parse_note_data(self, notes_str: str, note_data: NoteData):
         """

@@ -159,6 +159,21 @@ class FeatureSet:
     file_format: str = ""
     has_advanced_timing: bool = False
 
+    # Spatial / center-of-mass features
+    com_lateral_range: float = 0.0
+    com_velocity_mean: float = 0.0
+    com_velocity_peak: float = 0.0
+    com_velocity_std: float = 0.0
+    com_direction_changes: float = 0.0
+    cross_pad_rate: float = 0.0
+
+    # Facing / footwork features
+    crossover_rate: float = 0.0
+    facing_changes_per_beat: float = 0.0
+
+    # Rhythm variability
+    note_interval_std: float = 0.0
+
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary for ML models."""
         result = {}

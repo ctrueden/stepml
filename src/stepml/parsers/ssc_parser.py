@@ -1,9 +1,12 @@
 """
 Parser for StepMania 5 .ssc files.
 """
+import logging
 import re
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
+
+logger = logging.getLogger(__name__)
 
 from stepml.utils.data_structures import (
     ChartData, NoteData, TimingEvent, ChartType,
@@ -262,7 +265,30 @@ class SSCParser:
         # Parse the note data (same format as .sm)
         self._parse_note_data(notes_data, note_data)
 
-        chart_data.charts.append(note_data)
+        # Deduplicate: if a chart with the same type+difficulty already exists,
+        # keep whichever has more notes (drops groove-radar-only dummy charts).
+        existing = next(
+            (i for i, c in enumerate(chart_data.charts)
+             if c.chart_type == note_data.chart_type and c.difficulty == note_data.difficulty),
+            None
+        )
+        if existing is not None:
+            kept = chart_data.charts[existing]
+            if note_data.total_notes > kept.total_notes:
+                logger.warning(
+                    "Duplicate %s %s in %s — dropping %d-note entry, keeping %d-note entry",
+                    note_data.chart_type.value, note_data.difficulty.value, chart_data.filepath,
+                    kept.total_notes, note_data.total_notes
+                )
+                chart_data.charts[existing] = note_data
+            else:
+                logger.warning(
+                    "Duplicate %s %s in %s — dropping %d-note entry, keeping %d-note entry",
+                    note_data.chart_type.value, note_data.difficulty.value, chart_data.filepath,
+                    note_data.total_notes, kept.total_notes
+                )
+        else:
+            chart_data.charts.append(note_data)
 
     def _parse_note_data(self, notes_str: str, note_data: NoteData):
         """

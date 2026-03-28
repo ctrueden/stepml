@@ -131,7 +131,8 @@ class DWIParser:
         DWI files typically have a single BPM value (no BPM changes).
         """
         # Parse BPM (single value)
-        bpm_pattern = r'#\s*BPM\s*:\s*([^;]+);'
+        # Semicolon is optional — some DWI files omit it (e.g. #BPM:190.42 with no ;)
+        bpm_pattern = r'#\s*BPM\s*:\s*([^\s;]+)'
         bpm_match = re.search(bpm_pattern, content, re.IGNORECASE)
         if bpm_match:
             try:
@@ -233,6 +234,13 @@ class DWIParser:
         # DWI typically uses 1/8th note resolution (8 subdivisions per beat)
         # Each character represents 1/8th of a beat
         beat_increment = 0.125  # 1/8th beat
+
+        # Strip all whitespace (spaces, newlines used as measure separators in
+        # some DWI files) and '!' hold/freeze markers before parsing.
+        # '!' precedes a note to indicate it starts a hold; we treat the
+        # following note normally since hold tracking is not yet implemented.
+        notes_str = ''.join(notes_str.split())  # remove all whitespace
+        notes_str = notes_str.replace('!', '')   # drop hold markers
 
         # For DOUBLE charts, split into left and right panel sections
         if chart_type == ChartType.DOUBLE and ':' in notes_str:

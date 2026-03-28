@@ -66,7 +66,8 @@ class DatasetGenerator:
             'charts_by_format': defaultdict(int),
             'charts_by_scale': defaultdict(int),
             'charts_by_difficulty': defaultdict(int),
-            'errors': []
+            'errors': [],
+            'data_warnings': [],   # suspicious chart entries flagged during extraction
         }
 
         # Output data
@@ -146,6 +147,41 @@ class DatasetGenerator:
             logger.error(f"Failed to parse {file_path}: {e}")
             return None
 
+    # Thresholds for data-quality checks
+    _WARN_SPARSE_NOTES = 30        # fewer notes than this is suspicious for any rated chart
+    _WARN_SPARSE_FOR_RATING = 6    # original_rating >= this with very few notes
+    _WARN_HIGH_NPS = 30.0          # notes/sec above this suggests a BPM parse error
+    _WARN_SHORT_SONG = 10.0        # chart length in seconds below this is suspicious
+
+    def _check_chart_quality(self, row: Dict, file_path: Path):
+        """Collect warnings for implausible chart entries."""
+        title       = row.get('title', '?')
+        ctype       = row.get('chart_type', '?')
+        diff        = row.get('difficulty', '?')
+        rating      = row.get('original_rating', 0) or 0
+        nps         = row.get('notes_per_second', 0) or 0
+        total       = row.get('total_notes', 0) or 0
+        length      = row.get('chart_length_seconds', 0) or 0
+        path_str    = str(file_path)
+
+        issues = []
+        if total < self._WARN_SPARSE_NOTES and rating >= self._WARN_SPARSE_FOR_RATING:
+            issues.append(f"only {int(total)} notes but rated {rating}")
+        if nps > self._WARN_HIGH_NPS:
+            issues.append(f"implausibly high NPS {nps:.1f} (BPM error?)")
+        if length < self._WARN_SHORT_SONG and total > 0:
+            issues.append(f"chart length only {length:.1f}s")
+
+        for issue in issues:
+            self.stats['data_warnings'].append({
+                'file': path_str,
+                'title': title,
+                'chart_type': ctype,
+                'difficulty': diff,
+                'original_rating': rating,
+                'issue': issue,
+            })
+
     def extract_chart_features(self, chart_data: ChartData, file_path: Path) -> List[Dict]:
         """Extract features from all difficulty levels in a chart."""
         rows = []
@@ -199,6 +235,7 @@ class DatasetGenerator:
                     )
                     row.update(perf_features)
 
+                self._check_chart_quality(row, file_path)
                 rows.append(row)
 
                 # Update statistics
@@ -303,7 +340,9 @@ class DatasetGenerator:
             'charts_by_scale': dict(self.stats['charts_by_scale']),
             'charts_by_difficulty': dict(self.stats['charts_by_difficulty']),
             'error_count': len(self.stats['errors']),
-            'errors': self.stats['errors'][:100]  # Limit to first 100 errors
+            'errors': self.stats['errors'][:100],  # Limit to first 100 errors
+            'data_warning_count': len(self.stats['data_warnings']),
+            'data_warnings': self.stats['data_warnings'],
         }
 
         with open(stats_path, 'w') as f:
@@ -357,6 +396,18 @@ class DatasetGenerator:
             logger.info(f"  First 5 errors:")
             for error in self.stats['errors'][:5]:
                 logger.info(f"    - {error}")
+
+        warnings = self.stats['data_warnings']
+        logger.info(f"\nData Quality Warnings: {len(warnings)}")
+        if warnings:
+            logger.info(f"  {'File':<55} {'Type':<14} {'Diff':<10} {'Rtg':>4}  Issue")
+            logger.info(f"  {'-'*55} {'-'*14} {'-'*10} {'-'*4}  {'-'*40}")
+            for w in warnings:
+                short_file = '/'.join(w['file'].replace('\\', '/').split('/')[-3:])
+                logger.info(
+                    f"  {short_file:<55} {w['chart_type']:<14} {w['difficulty']:<10}"
+                    f" {w['original_rating']:>4}  {w['issue']}"
+                )
 
         # Performance enrichment statistics
         if self.performance_enricher:

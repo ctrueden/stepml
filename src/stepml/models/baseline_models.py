@@ -92,6 +92,10 @@ class BaselineModel:
                 'chart_type', 'difficulty',
                 'original_rating', 'normalized_rating',
                 'detected_scale', 'scale_confidence',
+                # Raw counts that conflate difficulty with song length;
+                # their rate-based equivalents (notes_per_second,
+                # average_density, chart_length_*) are kept instead.
+                'total_notes',
                 # Performance features (sparse data, not intrinsic to chart)
                 'times_played', 'has_performance_data',
                 'best_accuracy', 'average_accuracy', 'consistency_score',

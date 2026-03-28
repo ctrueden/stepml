@@ -5,7 +5,7 @@ import numpy as np
 from typing import List, Dict, Tuple
 from pathlib import Path
 
-from stepml.utils.data_structures import ChartData, NoteData, FeatureSet, TimingEvent
+from stepml.utils.data_structures import ChartData, ChartType, NoteData, FeatureSet, TimingEvent
 
 
 class FeatureExtractor:
@@ -53,6 +53,15 @@ class FeatureExtractor:
 
         # Extract technical features
         self._extract_technical_features(chart_data, note_data, features)
+
+        # Extract spatial / COM features
+        self._extract_spatial_features(chart_data, note_data, features)
+
+        # Extract facing / footwork features
+        self._extract_facing_features(note_data, features)
+
+        # Extract rhythm variability features
+        self._extract_rhythm_features(note_data, features)
 
         return features
 
@@ -234,6 +243,133 @@ class FeatureExtractor:
             densities.append(density)
 
         return float(np.var(densities)) if densities else 0.0
+
+    # ------------------------------------------------------------------ #
+    # x-position lookup tables (lateral only; Up/Down share centre x)    #
+    # ------------------------------------------------------------------ #
+    _SINGLE_X = [-1.0,  0.0, 0.0, 1.0]   # L  D  U  R
+    # Double: left pad centred at -2, right pad at +2, 2-unit gap between them
+    _DOUBLE_X = [-3.0, -2.0, -2.0, -1.0,  # Left pad:  L  D  U  R
+                  1.0,  2.0,  2.0,  3.0]  # Right pad: L  D  U  R
+
+    def _col_x(self, note_data: NoteData) -> List[float]:
+        return self._DOUBLE_X if note_data.chart_type == ChartType.DOUBLE else self._SINGLE_X
+
+    def _windowed_peak(self, values: np.ndarray, beats: np.ndarray,
+                       window_beats: float) -> float:
+        """Mean of values in the busiest window of width window_beats."""
+        if len(values) == 0:
+            return 0.0
+        peak = 0.0
+        for i in range(len(beats)):
+            mask = (beats >= beats[i]) & (beats < beats[i] + window_beats)
+            if mask.any():
+                peak = max(peak, float(np.mean(values[mask])))
+        return peak
+
+    def _extract_spatial_features(self, chart_data: ChartData, note_data: NoteData,
+                                  features: FeatureSet):
+        """Center-of-mass position, velocity, and cross-pad statistics."""
+        x_pos = self._col_x(note_data)
+        coms: List[float] = []
+        beats: List[float] = []
+
+        for beat, pattern in note_data.note_positions:
+            active = [i for i, c in enumerate(pattern)
+                      if c in '124' and i < len(x_pos)]
+            if active:
+                coms.append(float(np.mean([x_pos[i] for i in active])))
+                beats.append(beat)
+
+        if len(coms) < 2:
+            return
+
+        coms_arr = np.array(coms)
+        beats_arr = np.array(beats)
+        dbeats = np.diff(beats_arr)
+        dbeats = np.where(dbeats > 0, dbeats, 1e-6)
+        delta = np.diff(coms_arr)
+        # velocity in beats domain; convert to units/second via BPM
+        velocity_per_beat = np.abs(delta) / dbeats
+        bpm = chart_data.get_primary_bpm()
+        bps = bpm / 60.0 if bpm > 0 else 1.0
+        velocity = velocity_per_beat * bps
+
+        features.com_lateral_range = float(coms_arr.max() - coms_arr.min())
+        features.com_velocity_mean = float(velocity.mean())
+        features.com_velocity_peak = self._windowed_peak(velocity, beats_arr[1:], 8.0)
+        features.com_velocity_std = float(velocity.std())
+
+        # Direction changes normalized to per-beat rate
+        raw_direction_changes = int(np.sum(np.diff(np.sign(delta)) != 0))
+        features.com_direction_changes = (raw_direction_changes / features.chart_length_beats
+                                          if features.chart_length_beats > 0 else 0.0)
+
+        # Cross-pad rate: times COM crosses x=0 (pad boundary) per beat
+        sign_changes = int(np.sum(np.diff(np.sign(coms_arr)) != 0))
+        features.cross_pad_rate = (sign_changes / features.chart_length_beats
+                                   if features.chart_length_beats > 0 else 0.0)
+
+    def _count_crossovers_with_start(self, xs: List[float],
+                                     start_foot: int) -> Tuple[int, int]:
+        """
+        Simulate alternating footwork starting with the given foot (0=LF, 1=RF).
+
+        Returns (crossover_count, facing_change_count).  A crossover is any
+        step where the moving foot lands on the wrong side of the standing foot.
+        """
+        foot_x = [-1.0, 1.0]   # [LF_x, RF_x] — reasonable starting positions
+        facing = 1              # +1 forward (RF >= LF), -1 crossed
+        foot_idx = start_foot
+        crossovers = 0
+        facing_changes = 0
+
+        for x in xs:
+            other = 1 - foot_idx
+            other_x = foot_x[other]
+            # Crossover: LF stepping right of RF, or RF stepping left of LF
+            if (foot_idx == 0 and x > other_x) or (foot_idx == 1 and x < other_x):
+                crossovers += 1
+            foot_x[foot_idx] = x
+            new_facing = 1 if foot_x[1] >= foot_x[0] else -1
+            if new_facing != facing:
+                facing_changes += 1
+                facing = new_facing
+            foot_idx = 1 - foot_idx
+
+        return crossovers, facing_changes
+
+    def _extract_facing_features(self, note_data: NoteData, features: FeatureSet):
+        """Crossover rate and facing-change frequency via foot simulation."""
+        x_pos = self._col_x(note_data)
+
+        # Only track single-column steps; jumps reset foot independence
+        single_xs: List[float] = []
+        for _, pattern in note_data.note_positions:
+            active = [i for i, c in enumerate(pattern)
+                      if c in '124' and i < len(x_pos)]
+            if len(active) == 1:
+                single_xs.append(x_pos[active[0]])
+
+        if len(single_xs) < 4:
+            return
+
+        # Try both starting feet; keep the result with fewer crossovers
+        c0, f0 = self._count_crossovers_with_start(single_xs, 0)
+        c1, f1 = self._count_crossovers_with_start(single_xs, 1)
+        crossovers, facing_changes = (c0, f0) if c0 <= c1 else (c1, f1)
+
+        features.crossover_rate = crossovers / len(single_xs)
+        features.facing_changes_per_beat = (facing_changes / features.chart_length_beats
+                                            if features.chart_length_beats > 0 else 0.0)
+
+    def _extract_rhythm_features(self, note_data: NoteData, features: FeatureSet):
+        """Standard deviation of note intervals — captures rhythmic irregularity."""
+        if len(note_data.note_positions) < 2:
+            return
+        beats = np.array(sorted(p[0] for p in note_data.note_positions))
+        intervals = np.diff(beats)
+        features.note_interval_std = float(intervals.std())
 
     def extract_all_charts(self, chart_data: ChartData) -> Dict[str, FeatureSet]:
         """
