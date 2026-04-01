@@ -24,6 +24,7 @@ from stepml.parsers.universal_parser import parse_chart_file
 from stepml.features.feature_extractor import FeatureExtractor
 from stepml.utils.data_structures import ChartData, ScaleType
 from stepml.utils.scale_detector import ScaleDetector
+from stepml.utils.ground_truth import GroundTruthOverrides
 from stepml.utils.performance_enrichment import PerformanceEnricher
 from stepml.utils import get_stepml_root, get_data_dir
 
@@ -39,12 +40,18 @@ class DatasetGenerator:
     """Generates ML-ready dataset from StepMania chart collection."""
 
     def __init__(self, songs_dir: Path, output_dir: Path, stats_file: Optional[Path] = None,
-                 target_scale: ScaleType = ScaleType.MODERN_DDR):
+                 target_scale: ScaleType = ScaleType.MODERN_DDR,
+                 ground_truth_file: Optional[Path] = None):
         self.songs_dir = Path(songs_dir)
         self.output_dir = Path(output_dir)
         self.target_scale = target_scale
         self.feature_extractor = FeatureExtractor()
         self.scale_detector = ScaleDetector()
+
+        # Ground truth rating overrides (optional)
+        self.ground_truth = None
+        if ground_truth_file:
+            self.ground_truth = GroundTruthOverrides(ground_truth_file)
 
         # Performance enrichment (optional)
         self.performance_enricher = None
@@ -285,6 +292,13 @@ class DatasetGenerator:
         # Create DataFrame
         df = pd.DataFrame(self.dataset_rows)
 
+        # Apply ground truth overrides (adds ground_truth_rating column)
+        if self.ground_truth:
+            df = self.ground_truth.apply(df)
+        else:
+            df['ground_truth_rating'] = df['normalized_rating']
+            df['has_ground_truth'] = False
+
         elapsed_time = time.time() - start_time
         logger.info(f"\nDataset generation complete in {elapsed_time:.2f}s")
 
@@ -390,6 +404,19 @@ class DatasetGenerator:
             logger.info(f"  Normalized rating range: {df['normalized_rating'].min():.1f} - {df['normalized_rating'].max():.1f}")
             logger.info(f"  Mean normalized rating: {df['normalized_rating'].mean():.2f} ± {df['normalized_rating'].std():.2f}")
 
+            if 'has_ground_truth' in df.columns:
+                n_gt = int(df['has_ground_truth'].sum())
+                logger.info(f"\nGround Truth Overrides: {n_gt} row(s)")
+                if n_gt > 0:
+                    gt_rows = df[df['has_ground_truth']][
+                        ['title', 'chart_type', 'difficulty', 'normalized_rating', 'ground_truth_rating']
+                    ]
+                    for _, r in gt_rows.iterrows():
+                        logger.info(
+                            f"  {r['title'][:40]:<42} {r['chart_type']:<14} {r['difficulty']:<10}"
+                            f" norm={r['normalized_rating']:.1f} → gt={r['ground_truth_rating']:.1f}"
+                        )
+
         if self.stats['errors']:
             logger.info(f"\nErrors:")
             logger.info(f"  Total errors: {len(self.stats['errors'])}")
@@ -459,6 +486,17 @@ def main():
         help='Path to Stats.xml for performance enrichment (default: ../Save/LocalProfiles/00000000/Stats.xml)'
     )
     parser.add_argument(
+        '--ground-truth',
+        type=Path,
+        default=stepml_root / 'ground_truth_ratings.yaml',
+        help='Path to ground truth rating overrides YAML (default: ground_truth_ratings.yaml)'
+    )
+    parser.add_argument(
+        '--no-ground-truth',
+        action='store_true',
+        help='Disable ground truth rating overrides'
+    )
+    parser.add_argument(
         '--no-performance',
         action='store_true',
         help='Disable performance data enrichment'
@@ -501,8 +539,18 @@ def main():
             logger.warning(f"Stats.xml not found at {args.stats_file}")
             logger.warning("Continuing without performance enrichment")
 
+    # Ground truth overrides
+    ground_truth_file = None
+    if not args.no_ground_truth:
+        gt_path = args.ground_truth
+        if gt_path.exists():
+            ground_truth_file = gt_path
+        else:
+            logger.warning(f"Ground truth file not found at {gt_path} — continuing without overrides")
+
     # Generate dataset
-    generator = DatasetGenerator(args.songs_dir, args.output_dir, stats_file, target_scale)
+    generator = DatasetGenerator(args.songs_dir, args.output_dir, stats_file, target_scale,
+                                 ground_truth_file)
     df = generator.generate_dataset(verbose=args.verbose)
 
     if not df.empty:

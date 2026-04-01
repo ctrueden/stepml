@@ -43,7 +43,9 @@ class BaselineModel:
         self.model = None
         self.scaler = StandardScaler()
         self.feature_names = None
-        self.target_column = 'normalized_rating'  # Use normalized rating for consistent scale
+        # ground_truth_rating is normalized_rating for most rows, with manual
+        # overrides applied for songs where normalized_rating is known to be wrong.
+        self.target_column = 'ground_truth_rating'
 
         # Training metadata
         self.trained = False
@@ -77,6 +79,21 @@ class BaselineModel:
 
         logger.info(f"  Loaded {len(df)} rows, {len(df.columns)} columns")
 
+        # Fall back to normalized_rating if ground_truth_rating not present
+        # (e.g. dataset generated before this feature was added)
+        if self.target_column not in df.columns:
+            logger.warning(
+                "Column %r not found; falling back to 'normalized_rating'",
+                self.target_column
+            )
+            self.target_column = 'normalized_rating'
+
+        # Report how many rows use manual ground truth labels
+        if 'has_ground_truth' in df.columns:
+            n_gt = int(df['has_ground_truth'].sum())
+            if n_gt:
+                logger.info(f"  Training with {n_gt} ground-truth-overridden label(s)")
+
         # Remove rows with missing target
         df = df.dropna(subset=[self.target_column])
         logger.info(f"  After removing missing targets: {len(df)} rows")
@@ -91,6 +108,7 @@ class BaselineModel:
                 'title', 'artist', 'genre', 'credit',
                 'chart_type', 'difficulty',
                 'original_rating', 'normalized_rating',
+                'ground_truth_rating', 'has_ground_truth',
                 'detected_scale', 'scale_confidence',
                 # Raw counts that conflate difficulty with song length;
                 # their rate-based equivalents (notes_per_second,

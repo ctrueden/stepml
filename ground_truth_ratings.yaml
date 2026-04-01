@@ -1,0 +1,47 @@
+# Ground truth rating overrides
+#
+# These correct known-wrong normalized_rating values used as training labels.
+# Each entry replaces the computed label for a specific chart with a
+# human-verified difficulty rating on the modern_ddr scale (1–20).
+#
+# Fields:
+#   title       – song title, case-insensitive exact match
+#   pack        – optional pack name substring to disambiguate (case-insensitive)
+#   chart_type  – dance-single | dance-double | dance-couple | dance-solo | all
+#   difficulty  – Beginner | Easy | Medium | Hard | Challenge | all
+#   rating      – true difficulty on the target scale
+#   note        – optional free-text explanation (not used by code)
+#
+# The rating is applied to every matched (title × chart_type × difficulty × pack)
+# row in the dataset regardless of which scale file it came from, so keep the
+# value on the modern_ddr 1–20 scale unless you are running a different target.
+
+overrides:
+
+  # --- Double specific corrections ---
+
+  - title: "La Señorita Virtual"
+    chart_type: "dance-double"
+    difficulty: "Hard"
+    rating: 13.0
+    note: >
+      Constant back-and-forth lateral shifting makes this significantly harder
+      than other 12s; the COM oscillation features capture this but the training
+      label anchors the model at 12.
+
+  - title: "Crazy"
+    pack: "ITG"
+    chart_type: "dance-double"
+    difficulty: "Hard"
+    rating: 10.0
+    note: >
+      Far easier than TRIP MACHINE survivor despite a similar NPS/normalized
+      rating (~11.5). Straightforward single-direction runs, low crossover demand.
+
+  # --- Single specific corrections ---
+
+  - title: "La Señorita Virtual"
+    chart_type: "dance-single"
+    difficulty: "Hard"
+    rating: 13.0
+    note: "Same reasoning as double — back-and-forth lateral pattern."
