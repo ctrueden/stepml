@@ -29,6 +29,25 @@ overrides:
       than other 12s; the COM oscillation features capture this but the training
       label anchors the model at 12.
 
+  - title: "La Señorita"
+    pack: "DDR 3rd Mix"
+    chart_type: "dance-double"
+    difficulty: "Hard"
+    rating: 13.0
+    note: >
+      Performance data (90.90% with 3 misses, Tier07) matches PARANOiA Rebirth
+      double Hard (91.63%, Tier07), which is rated 13. Original rating of 13 is
+      correct; calc was pulling it to 12.5.
+
+  - title: "PARANOiA Rebirth"
+    pack: "DDR 3rd Mix"
+    chart_type: "dance-double"
+    difficulty: "Hard"
+    rating: 13.0
+    note: >
+      Anchor point: 91.63% with 3 misses matches La Señorita double performance.
+      Original and calc both say 13; this locks it as a reference label.
+
   - title: "Crazy"
     pack: "ITG"
     chart_type: "dance-double"
@@ -38,6 +57,14 @@ overrides:
       Far easier than TRIP MACHINE survivor despite a similar NPS/normalized
       rating (~11.5). Straightforward single-direction runs, low crossover demand.
 
+  - title: "ROCK BEAT"
+    pack: "DDR 3rd Mix"
+    chart_type: "dance-double"
+    difficulty: "Hard"
+    rating: 11.0
+    note: >
+      97.90% FC on double; calc is already 11.0 so this is a confirming anchor.
+
   # --- Single specific corrections ---
 
   - title: "La Señorita Virtual"
@@ -45,3 +72,23 @@ overrides:
     difficulty: "Hard"
     rating: 13.0
     note: "Same reasoning as double — back-and-forth lateral pattern."
+
+  - title: "SO DEEP (PERFECT SPHERE REMIX)"
+    pack: "DDR 6th Mix MAX"
+    chart_type: "dance-single"
+    difficulty: "Hard"
+    rating: 14.0
+    note: >
+      Originally rated 9 on classic DDR scale (just barely didn't make a 10);
+      that maps to 14 on modern DDR. Faster and more relentless than typical 13s
+      with many tricky patterns despite having gallops. Calc already returns 14.0.
+
+  - title: "IN THE NAVY '99 (XXL Disaster Remix)"
+    pack: "DDR 3rd Mix"
+    chart_type: "dance-single"
+    difficulty: "Hard"
+    rating: 11.0
+    note: >
+      98.43% on first play despite calc 12.0. Chart is dominated by gallops
+      (AB BC CD DE patterns) which halve effective energy expenditure — two
+      gallop notes cost about the same as one regular step physically.
