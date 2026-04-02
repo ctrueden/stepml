@@ -174,6 +174,21 @@ class FeatureSet:
     # Rhythm variability
     note_interval_std: float = 0.0
 
+    # Gallop / stream rhythm features
+    # same_col_repeat_ratio: fraction of notes that re-tap the same column as
+    #   the immediately preceding note within ≤ 1 beat (quarter note).
+    #   Catches both gallop orientations:
+    #     "AB bC" — short b immediately after B (gap ≤ 0.25 beats)
+    #     "A bB"  — free re-tap B after short transition b (gap 0.5–0.75)
+    #   High values reduce effective difficulty relative to raw NPS because
+    #   the foot is already in position for these taps.
+    same_col_repeat_ratio: float = 0.0
+    # stream_ratio: fraction of notes that are interior to a sustained fast run
+    #   (both the preceding AND following interval are ≤ 16th note, ≤ 0.25 beats,
+    #   and the note does NOT share a column with its neighbours).
+    #   Genuinely hard — no free taps, foot must travel each step.
+    stream_ratio: float = 0.0
+
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary for ML models."""
         result = {}

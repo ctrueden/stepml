@@ -363,13 +363,66 @@ class FeatureExtractor:
         features.facing_changes_per_beat = (facing_changes / features.chart_length_beats
                                             if features.chart_length_beats > 0 else 0.0)
 
+    # Threshold for "short" interval: 16th note = 1/4 beat.
+    _GALLOP_SHORT = 0.25   # beats (≤ 16th note)
+    # A same-column re-tap counts as a "free" repeat gallop if the note
+    # sharing that column occurred within this many beats (catches both
+    # AB bC and A bB gallop orientations).
+    _SAME_COL_WINDOW = 1.0  # beats
+
     def _extract_rhythm_features(self, note_data: NoteData, features: FeatureSet):
-        """Standard deviation of note intervals — captures rhythmic irregularity."""
-        if len(note_data.note_positions) < 2:
+        """Note interval std, same-column repeat ratio, and stream ratio."""
+        positions = sorted(note_data.note_positions, key=lambda x: x[0])
+        n = len(positions)
+        if n < 2:
             return
-        beats = np.array(sorted(p[0] for p in note_data.note_positions))
+
+        beats = np.array([p[0] for p in positions])
         intervals = np.diff(beats)
         features.note_interval_std = float(intervals.std())
+
+        # ------------------------------------------------------------------ #
+        # same_col_repeat_ratio                                                #
+        #   Note i is a "free" tap if it shares at least one active column    #
+        #   with its immediately preceding note AND the gap between them is   #
+        #   ≤ _SAME_COL_WINDOW beats.  Catches both gallop orientations:     #
+        #     "AB bC" — b follows B with a short gap, same column            #
+        #     "A bB"  — B follows b with a longer gap but same column as A   #
+        # stream_ratio                                                         #
+        #   Note i is a stream interior note if both the preceding AND        #
+        #   following intervals are ≤ _GALLOP_SHORT (16th note) AND the note  #
+        #   does NOT share a column with either neighbor.                     #
+        # ------------------------------------------------------------------ #
+        same_col_repeat = 0
+        stream_interior = 0
+
+        for i in range(1, n):
+            gap_before = intervals[i - 1]
+            pat_prev = positions[i - 1][1]
+            pat_curr = positions[i][1]
+
+            col_overlap = any(
+                a == '1' and b == '1'
+                for a, b in zip(pat_prev, pat_curr)
+            )
+
+            if gap_before <= self._SAME_COL_WINDOW and col_overlap:
+                same_col_repeat += 1
+                continue  # don't double-count as stream
+
+            if gap_before <= self._GALLOP_SHORT and i < n - 1:
+                gap_after = intervals[i]
+                if gap_after <= self._GALLOP_SHORT:
+                    pat_next = positions[i + 1][1]
+                    col_overlap_next = any(
+                        a == '1' and b == '1'
+                        for a, b in zip(pat_curr, pat_next)
+                    )
+                    if not col_overlap_next:
+                        stream_interior += 1
+
+        features.same_col_repeat_ratio = same_col_repeat / n
+        features.stream_ratio = stream_interior / n
 
     def extract_all_charts(self, chart_data: ChartData) -> Dict[str, FeatureSet]:
         """
