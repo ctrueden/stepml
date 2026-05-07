@@ -63,6 +63,9 @@ class FeatureExtractor:
         # Extract rhythm variability features
         self._extract_rhythm_features(note_data, features)
 
+        # Extract stamina features
+        self._extract_stamina_features(note_data, features)
+
         return features
 
     def _extract_timing_features(self, chart_data: ChartData, note_data: NoteData,
@@ -423,6 +426,66 @@ class FeatureExtractor:
 
         features.same_col_repeat_ratio = same_col_repeat / n
         features.stream_ratio = stream_interior / n
+
+    # Threshold for "dense" run: 12th note (triplet) speed or faster.
+    # 1/3 beat + small rounding tolerance covers both triplets (0.333) and
+    # 16th notes (0.25) while excluding 8th notes (0.5).
+    _DENSE_THRESHOLD = 1.0 / 3.0 + 0.01  # beats
+
+    def _extract_stamina_features(self, note_data: NoteData, features: FeatureSet):
+        """Longest dense run and stream fraction at 12th-note threshold."""
+        if features.chart_length_seconds <= 0 or features.chart_length_beats <= 0:
+            return
+
+        positions = sorted(note_data.note_positions, key=lambda x: x[0])
+        n = len(positions)
+        if n < 4:
+            return
+
+        beats = np.array([p[0] for p in positions])
+        intervals = np.diff(beats)
+
+        # Walk intervals and collect contiguous dense runs.
+        run_beats_list = []
+        run_note_counts = []
+        run_start = None
+        run_end = None
+        run_notes = 0
+
+        for i, iv in enumerate(intervals):
+            if iv <= self._DENSE_THRESHOLD:
+                if run_start is None:
+                    run_start = beats[i]
+                    run_notes = 2  # first and second note
+                else:
+                    run_notes += 1
+                run_end = beats[i + 1]
+            else:
+                if run_start is not None:
+                    run_beats_list.append(run_end - run_start)
+                    run_note_counts.append(run_notes)
+                    run_start = None
+                    run_end = None
+                    run_notes = 0
+        if run_start is not None:
+            run_beats_list.append(run_end - run_start)
+            run_note_counts.append(run_notes)
+
+        if not run_beats_list:
+            return
+
+        # Convert beats → seconds using the chart-wide average (handles BPM changes).
+        beats_per_second = features.chart_length_beats / features.chart_length_seconds
+        run_seconds = [b / beats_per_second for b in run_beats_list]
+
+        features.max_run_seconds = float(max(run_seconds))
+        total_stream_seconds = float(sum(run_seconds))
+        features.stream_fraction = total_stream_seconds / features.chart_length_seconds
+
+        # Notes per second specifically during dense-run sections.
+        total_stream_notes = sum(run_note_counts)
+        if total_stream_seconds > 0:
+            features.stream_nps = total_stream_notes / total_stream_seconds
 
     def extract_all_charts(self, chart_data: ChartData) -> Dict[str, FeatureSet]:
         """

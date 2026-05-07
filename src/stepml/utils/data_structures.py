@@ -189,6 +189,21 @@ class FeatureSet:
     #   Genuinely hard — no free taps, foot must travel each step.
     stream_ratio: float = 0.0
 
+    # Stamina features (12th-note / triplet threshold: gap ≤ 1/3 beat)
+    # max_run_seconds: duration of the longest single continuous dense run.
+    #   Captures the peak sustained effort required without recovery.
+    max_run_seconds: float = 0.0
+    # stream_fraction: fraction of chart time spent inside dense runs.
+    #   Distinguishes long charts that are mostly rest from those that
+    #   sustain high-speed stepping throughout (e.g. triplet marathons).
+    stream_fraction: float = 0.0
+    # stream_nps: notes per second *during* dense run sections only.
+    #   Overall NPS averages in rests and can severely understate how fast
+    #   the streaming passages actually are.  A chart with NPS=6 but
+    #   stream_nps=9.5 (triplets at 170 BPM) is much harder than one with
+    #   NPS=6 and stream_nps=6.5 (widely-spaced 8th notes with brief bursts).
+    stream_nps: float = 0.0
+
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary for ML models."""
         result = {}
