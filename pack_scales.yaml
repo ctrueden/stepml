@@ -1,0 +1,22 @@
+# Pack-level scale overrides
+#
+# Used when auto-detection fails for a pack (e.g. small community packs
+# whose name doesn't match any known pattern and whose NPS falls in the
+# ambiguous 5.5–6.5 zone between modern-DDR inflation and ITG density).
+#
+# Fields:
+#   pack   – case-insensitive substring matched against the pack directory name
+#   scale  – one of: classic_ddr | modern_ddr | itg
+#   note   – optional free-text explanation
+#
+# Entries are checked before falling back to ScaleType.UNKNOWN, so they
+# only take effect when pattern + statistical detection both fail.
+
+overrides:
+
+  - pack: "Kamelot"
+    scale: "itg"
+    note: >
+      Single-artist community pack. Charts use the ITG 1-12 scale
+      (e.g. Challenge rated 11 ≈ MAX 300's ITG 10, consistent with ITG
+      rating conventions for this era of simfile authoring).

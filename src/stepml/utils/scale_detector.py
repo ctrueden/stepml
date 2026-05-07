@@ -6,8 +6,19 @@ pack name, path patterns, and statistical analysis of ratings.
 """
 import re
 from pathlib import Path
-from typing import Tuple, List, Optional
+from typing import Dict, List, Optional, Tuple
+
+try:
+    import yaml
+    _YAML_AVAILABLE = True
+except ImportError:
+    _YAML_AVAILABLE = False
+
 from stepml.utils.data_structures import ScaleType, ChartData, NoteData
+
+# stepml root = four levels up from this file:
+# src/stepml/utils/scale_detector.py → src/stepml/utils → src/stepml → src → project root
+_STEPML_ROOT = Path(__file__).parent.parent.parent.parent
 
 
 class ScaleDetector:
@@ -61,12 +72,28 @@ class ScaleDetector:
         r"Really\s+Long\s+Stuff",
     ]
 
+    _SCALE_NAME_MAP = {
+        'classic_ddr': ScaleType.CLASSIC_DDR,
+        'modern_ddr': ScaleType.MODERN_DDR,
+        'itg': ScaleType.ITG,
+    }
+
     def __init__(self):
         """Initialize the scale detector."""
         # Compile regex patterns for performance
         self.classic_ddr_regex = [re.compile(p, re.IGNORECASE) for p in self.CLASSIC_DDR_PATTERNS]
         self.modern_ddr_regex = [re.compile(p, re.IGNORECASE) for p in self.MODERN_DDR_PATTERNS]
         self.itg_regex = [re.compile(p, re.IGNORECASE) for p in self.ITG_PATTERNS]
+
+        # Load pack-level scale overrides from pack_scales.yaml (if present).
+        # These kick in only when both pattern and statistical detection fail.
+        self._pack_overrides: List[Dict] = []
+        if _YAML_AVAILABLE:
+            override_path = _STEPML_ROOT / 'pack_scales.yaml'
+            if override_path.exists():
+                with open(override_path) as f:
+                    data = yaml.safe_load(f)
+                self._pack_overrides = data.get('overrides', [])
 
     def detect_scale(self, songpack_path: str, chart_data: Optional['ChartData'] = None) -> Tuple[ScaleType, float]:
         """
@@ -140,6 +167,14 @@ class ScaleDetector:
         for pattern in self.itg_regex:
             if pattern.search(songpack_name):
                 return (ScaleType.ITG, 0.85)
+
+        # Check pack_scales.yaml overrides (case-insensitive substring match)
+        name_lower = songpack_name.lower()
+        for entry in self._pack_overrides:
+            if entry.get('pack', '').lower() in name_lower:
+                scale = self._SCALE_NAME_MAP.get(entry.get('scale', ''))
+                if scale:
+                    return (scale, 0.80)
 
         # Unknown pack name
         return (None, 0.0)
