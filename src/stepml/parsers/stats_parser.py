@@ -1,11 +1,12 @@
 """
 Parser for StepMania Stats.xml files to extract player performance data.
 """
+
+import logging
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TapNoteScores:
     """Detailed timing breakdown for a chart."""
+
     w1: int = 0  # Marvelous/Fantastic
     w2: int = 0  # Perfect
     w3: int = 0  # Great
@@ -32,8 +34,13 @@ class TapNoteScores:
         if self.total_notes == 0:
             return 0.0
         # Weight: W1=1.0, W2=0.9, W3=0.7, W4=0.4, W5=0.2, Miss=0
-        weighted_score = (self.w1 * 1.0 + self.w2 * 0.9 + self.w3 * 0.7 +
-                         self.w4 * 0.4 + self.w5 * 0.2)
+        weighted_score = (
+            self.w1 * 1.0
+            + self.w2 * 0.9
+            + self.w3 * 0.7
+            + self.w4 * 0.4
+            + self.w5 * 0.2
+        )
         return weighted_score / self.total_notes
 
     @property
@@ -47,6 +54,7 @@ class TapNoteScores:
 @dataclass
 class HoldNoteScores:
     """Hold note performance."""
+
     held: int = 0
     let_go: int = 0
     missed_hold: int = 0
@@ -65,6 +73,7 @@ class HoldNoteScores:
 @dataclass
 class HighScoreData:
     """Individual high score record."""
+
     percent_dp: float
     max_combo: int
     grade: Optional[str]
@@ -75,6 +84,7 @@ class HighScoreData:
 @dataclass
 class ChartPerformance:
     """Performance data for a specific chart."""
+
     song_dir: str
     difficulty: str
     steps_type: str
@@ -120,7 +130,7 @@ class ChartPerformance:
         accuracies = [score.tap_scores.accuracy for score in self.all_scores]
         avg = sum(accuracies) / len(accuracies)
         variance = sum((acc - avg) ** 2 for acc in accuracies) / len(accuracies)
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
         # Normalize: higher consistency = lower std dev
         return max(0.0, 1.0 - std_dev * 2)  # Scale std_dev (typically 0-0.5)
 
@@ -149,24 +159,24 @@ class StatsParser:
             root = tree.getroot()
 
             # Find SongScores section
-            song_scores = root.find('SongScores')
+            song_scores = root.find("SongScores")
             if song_scores is None:
                 logger.warning("No SongScores section found in Stats.xml")
                 return
 
             # Parse each song
-            for song in song_scores.findall('Song'):
-                song_dir = song.get('Dir', '')
+            for song in song_scores.findall("Song"):
+                song_dir = song.get("Dir", "")
                 if not song_dir:
                     continue
 
                 # Normalize song directory path
-                song_dir = song_dir.replace('\\', '/')
-                if song_dir.endswith('/'):
+                song_dir = song_dir.replace("\\", "/")
+                if song_dir.endswith("/"):
                     song_dir = song_dir[:-1]
 
                 # Parse each chart (Steps) in this song
-                for steps in song.findall('Steps'):
+                for steps in song.findall("Steps"):
                     perf = self._parse_chart_performance(song_dir, steps)
                     if perf:
                         if song_dir not in self.performances:
@@ -179,29 +189,33 @@ class StatsParser:
             logger.error(f"Failed to parse Stats.xml: {e}")
             raise
 
-    def _parse_chart_performance(self, song_dir: str, steps_elem: ET.Element) -> Optional[ChartPerformance]:
+    def _parse_chart_performance(
+        self, song_dir: str, steps_elem: ET.Element
+    ) -> Optional[ChartPerformance]:
         """Parse performance data for a single chart."""
-        difficulty = steps_elem.get('Difficulty', '')
-        steps_type = steps_elem.get('StepsType', '')
-        description = steps_elem.get('Description', None)
+        difficulty = steps_elem.get("Difficulty", "")
+        steps_type = steps_elem.get("StepsType", "")
+        description = steps_elem.get("Description", None)
 
         if not difficulty or not steps_type:
             return None
 
-        high_score_list = steps_elem.find('HighScoreList')
+        high_score_list = steps_elem.find("HighScoreList")
         if high_score_list is None:
             return None
 
         # Get aggregated stats
-        num_times_played_elem = high_score_list.find('NumTimesPlayed')
-        num_times_played = int(num_times_played_elem.text) if num_times_played_elem is not None else 0
+        num_times_played_elem = high_score_list.find("NumTimesPlayed")
+        num_times_played = (
+            int(num_times_played_elem.text) if num_times_played_elem is not None else 0
+        )
 
-        high_grade_elem = high_score_list.find('HighGrade')
+        high_grade_elem = high_score_list.find("HighGrade")
         high_grade = high_grade_elem.text if high_grade_elem is not None else None
 
         # Parse all high scores
         all_scores = []
-        for high_score in high_score_list.findall('HighScore'):
+        for high_score in high_score_list.findall("HighScore"):
             score_data = self._parse_high_score(high_score)
             if score_data:
                 all_scores.append(score_data)
@@ -231,16 +245,16 @@ class StatsParser:
             best_max_combo=best_max_combo,
             best_tap_scores=best_tap_scores,
             best_hold_scores=best_hold_scores,
-            all_scores=all_scores
+            all_scores=all_scores,
         )
 
     def _parse_high_score(self, high_score_elem: ET.Element) -> Optional[HighScoreData]:
         """Parse a single high score record."""
         try:
             # Get basic score info
-            percent_dp_elem = high_score_elem.find('PercentDP')
-            max_combo_elem = high_score_elem.find('MaxCombo')
-            grade_elem = high_score_elem.find('Grade')
+            percent_dp_elem = high_score_elem.find("PercentDP")
+            max_combo_elem = high_score_elem.find("MaxCombo")
+            grade_elem = high_score_elem.find("Grade")
 
             if percent_dp_elem is None or max_combo_elem is None:
                 return None
@@ -251,37 +265,49 @@ class StatsParser:
 
             # Parse tap note scores
             tap_scores = TapNoteScores()
-            tap_note_scores_elem = high_score_elem.find('TapNoteScores')
+            tap_note_scores_elem = high_score_elem.find("TapNoteScores")
             if tap_note_scores_elem is not None:
-                for elem_name in ['W1', 'W2', 'W3', 'W4', 'W5', 'Miss', 'HitMine']:
+                for elem_name in ["W1", "W2", "W3", "W4", "W5", "Miss", "HitMine"]:
                     elem = tap_note_scores_elem.find(elem_name)
                     if elem is not None and elem.text:
                         value = int(elem.text)
-                        setattr(tap_scores, elem_name.lower().replace('hitmine', 'hit_mine'), value)
+                        setattr(
+                            tap_scores,
+                            elem_name.lower().replace("hitmine", "hit_mine"),
+                            value,
+                        )
 
             # Parse hold note scores
             hold_scores = HoldNoteScores()
-            hold_note_scores_elem = high_score_elem.find('HoldNoteScores')
+            hold_note_scores_elem = high_score_elem.find("HoldNoteScores")
             if hold_note_scores_elem is not None:
-                for elem_name in ['Held', 'LetGo', 'MissedHold']:
+                for elem_name in ["Held", "LetGo", "MissedHold"]:
                     elem = hold_note_scores_elem.find(elem_name)
                     if elem is not None and elem.text:
                         value = int(elem.text)
-                        setattr(hold_scores, elem_name.lower().replace('letgo', 'let_go').replace('missedhold', 'missed_hold'), value)
+                        setattr(
+                            hold_scores,
+                            elem_name.lower()
+                            .replace("letgo", "let_go")
+                            .replace("missedhold", "missed_hold"),
+                            value,
+                        )
 
             return HighScoreData(
                 percent_dp=percent_dp,
                 max_combo=max_combo,
                 grade=grade,
                 tap_scores=tap_scores,
-                hold_scores=hold_scores
+                hold_scores=hold_scores,
             )
 
         except (ValueError, AttributeError) as e:
             logger.debug(f"Failed to parse high score: {e}")
             return None
 
-    def get_performance(self, song_dir: str, difficulty: str, steps_type: str) -> Optional[ChartPerformance]:
+    def get_performance(
+        self, song_dir: str, difficulty: str, steps_type: str
+    ) -> Optional[ChartPerformance]:
         """
         Get performance data for a specific chart.
 
@@ -294,8 +320,8 @@ class StatsParser:
             ChartPerformance object or None if not found
         """
         # Normalize song_dir
-        song_dir = song_dir.replace('\\', '/')
-        if song_dir.endswith('/'):
+        song_dir = song_dir.replace("\\", "/")
+        if song_dir.endswith("/"):
             song_dir = song_dir[:-1]
 
         performances = self.performances.get(song_dir, [])

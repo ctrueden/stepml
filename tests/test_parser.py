@@ -4,10 +4,11 @@ Regression tests for SM file parser.
 These tests ensure the parser continues to correctly extract metadata,
 timing data, and note information from SM files.
 """
+
 import pytest
 
 from stepml.parsers.sm_parser import parse_sm_file
-from stepml.utils.data_structures import ChartData, DifficultyType, ChartType
+from stepml.utils.data_structures import ChartData, ChartType, DifficultyType
 
 
 @pytest.mark.parser
@@ -33,7 +34,7 @@ class TestParserBasics:
 
         # Should have basic metadata
         assert result.title != "", "Title should not be empty"
-        assert result.format in ['.sm', '.ssc', '.dwi'], "Format should be recognized"
+        assert result.format in [".sm", ".ssc", ".dwi"], "Format should be recognized"
         assert result.songpack != "", "Songpack should be extracted"
 
     def test_parser_extracts_timing_data(self, test_chart_paths):
@@ -73,7 +74,9 @@ class TestParserEdgeCases:
 
     def test_high_bpm_charts(self, test_chart_paths):
         """Parser should handle high BPM charts correctly."""
-        high_bpm_charts = [c for c in test_chart_paths if "high_bpm" in c.get("edge_cases", [])]
+        high_bpm_charts = [
+            c for c in test_chart_paths if "high_bpm" in c.get("edge_cases", [])
+        ]
 
         if not high_bpm_charts:
             pytest.skip("No high BPM test charts available")
@@ -85,27 +88,35 @@ class TestParserEdgeCases:
 
     def test_bpm_changes(self, test_chart_paths):
         """Parser should detect BPM changes."""
-        bpm_change_charts = [c for c in test_chart_paths if "bpm_changes" in c.get("edge_cases", [])]
+        bpm_change_charts = [
+            c for c in test_chart_paths if "bpm_changes" in c.get("edge_cases", [])
+        ]
 
         if not bpm_change_charts:
             pytest.skip("No BPM change test charts available")
 
         for chart_info in bpm_change_charts:
             result = parse_sm_file(str(chart_info["path"]))
-            assert result.has_bpm_changes() or len(result.bpms) > 0, \
+            assert result.has_bpm_changes() or len(result.bpms) > 0, (
                 "Should detect BPM data"
+            )
 
     def test_multiple_difficulties(self, test_chart_paths):
         """Parser should handle multiple difficulty charts."""
-        multi_diff_charts = [c for c in test_chart_paths if "multiple_difficulties" in c.get("edge_cases", [])]
+        multi_diff_charts = [
+            c
+            for c in test_chart_paths
+            if "multiple_difficulties" in c.get("edge_cases", [])
+        ]
 
         if not multi_diff_charts:
             pytest.skip("No multi-difficulty test charts available")
 
         for chart_info in multi_diff_charts:
             result = parse_sm_file(str(chart_info["path"]))
-            assert len(result.charts) >= 3, \
+            assert len(result.charts) >= 3, (
                 f"Expected multiple difficulties, found {len(result.charts)}"
+            )
 
 
 @pytest.mark.parser
@@ -139,13 +150,15 @@ class TestParserNoteData:
 
             for chart in result.charts:
                 # Jumps shouldn't exceed total notes
-                assert chart.jump_count <= chart.total_notes, \
+                assert chart.jump_count <= chart.total_notes, (
                     "Jump count shouldn't exceed total notes"
+                )
 
                 # Component notes shouldn't exceed total (allowing for overlap)
                 component_sum = chart.tap_notes + chart.hold_notes + chart.roll_notes
-                assert component_sum >= chart.total_notes * 0.5, \
+                assert component_sum >= chart.total_notes * 0.5, (
                     "Component notes should account for significant portion of total"
+                )
 
     def test_difficulty_rating_progression(self, test_chart_paths):
         """Higher difficulties should generally have higher ratings."""
@@ -182,8 +195,9 @@ class TestParserNoteData:
                 if len(sorted_charts) >= 2:
                     first_rating = sorted_charts[0].rating
                     last_rating = sorted_charts[-1].rating
-                    assert last_rating >= first_rating, \
+                    assert last_rating >= first_rating, (
                         f"Last difficulty rating ({last_rating}) should be >= first ({first_rating})"
+                    )
 
 
 @pytest.mark.parser

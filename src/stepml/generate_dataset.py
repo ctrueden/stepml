@@ -14,24 +14,21 @@ import logging
 import sys
 import time
 from collections import defaultdict
-from dataclasses import asdict
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
 
-from stepml.parsers.universal_parser import parse_chart_file
 from stepml.features.feature_extractor import FeatureExtractor
+from stepml.parsers.universal_parser import parse_chart_file
+from stepml.utils import get_data_dir, get_stepml_root
 from stepml.utils.data_structures import ChartData, ScaleType
-from stepml.utils.scale_detector import ScaleDetector
 from stepml.utils.ground_truth import GroundTruthOverrides
 from stepml.utils.performance_enrichment import PerformanceEnricher
-from stepml.utils import get_stepml_root, get_data_dir
-
+from stepml.utils.scale_detector import ScaleDetector
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -39,9 +36,14 @@ logger = logging.getLogger(__name__)
 class DatasetGenerator:
     """Generates ML-ready dataset from StepMania chart collection."""
 
-    def __init__(self, songs_dir: Path, output_dir: Path, stats_file: Optional[Path] = None,
-                 target_scale: ScaleType = ScaleType.MODERN_DDR,
-                 ground_truth_file: Optional[Path] = None):
+    def __init__(
+        self,
+        songs_dir: Path,
+        output_dir: Path,
+        stats_file: Optional[Path] = None,
+        target_scale: ScaleType = ScaleType.MODERN_DDR,
+        ground_truth_file: Optional[Path] = None,
+    ):
         self.songs_dir = Path(songs_dir)
         self.output_dir = Path(output_dir)
         self.target_scale = target_scale
@@ -66,15 +68,15 @@ class DatasetGenerator:
 
         # Statistics tracking
         self.stats = {
-            'total_files': 0,
-            'successful_parses': 0,
-            'failed_parses': 0,
-            'total_charts': 0,
-            'charts_by_format': defaultdict(int),
-            'charts_by_scale': defaultdict(int),
-            'charts_by_difficulty': defaultdict(int),
-            'errors': [],
-            'data_warnings': [],   # suspicious chart entries flagged during extraction
+            "total_files": 0,
+            "successful_parses": 0,
+            "failed_parses": 0,
+            "total_charts": 0,
+            "charts_by_format": defaultdict(int),
+            "charts_by_scale": defaultdict(int),
+            "charts_by_difficulty": defaultdict(int),
+            "errors": [],
+            "data_warnings": [],  # suspicious chart entries flagged during extraction
         }
 
         # Output data
@@ -83,7 +85,7 @@ class DatasetGenerator:
     def find_chart_files(self) -> List[Path]:
         """
         Find all chart files in the songs directory.
-        
+
         Follows StepMania's file priority when multiple formats exist in the same directory:
         1. SSC (highest priority)
         2. SMA
@@ -91,14 +93,14 @@ class DatasetGenerator:
         4. DWI
         5. BMS
         6. KSF (lowest priority)
-        
+
         Only one file per song directory is loaded (the highest priority one).
         """
         logger.info(f"Scanning {self.songs_dir} for chart files...")
 
         # Priority order matching StepMania's NotesLoader::LoadFromDir
-        extensions = ['*.ssc', '*.sma', '*.sm', '*.dwi', '*.bms', '*.ksf']
-        
+        extensions = ["*.ssc", "*.sma", "*.sm", "*.dwi", "*.bms", "*.ksf"]
+
         # Get all song directories (directories containing at least one simfile)
         song_dirs = {}
         for ext in extensions:
@@ -106,27 +108,29 @@ class DatasetGenerator:
             for file_path in found:
                 song_dir = file_path.parent
                 song_dir_key = str(song_dir)
-                
+
                 # Only add if we haven't already found a higher-priority file for this directory
                 if song_dir_key not in song_dirs:
                     song_dirs[song_dir_key] = file_path
-        
+
         chart_files = list(song_dirs.values())
-        
+
         # Log findings
         format_counts = {}
         for file_path in chart_files:
             ext = file_path.suffix.lower()
             format_counts[ext] = format_counts.get(ext, 0) + 1
-        
+
         for ext in extensions:
-            ext_key = ext.replace('*', '')  # Remove wildcard
+            ext_key = ext.replace("*", "")  # Remove wildcard
             count = format_counts.get(ext_key, 0)
             if count > 0:
                 logger.info(f"  Found {count} {ext} files")
 
-        self.stats['total_files'] = len(chart_files)
-        logger.info(f"Total chart files found: {len(chart_files)} (one per song directory)")
+        self.stats["total_files"] = len(chart_files)
+        logger.info(
+            f"Total chart files found: {len(chart_files)} (one per song directory)"
+        )
         return sorted(chart_files)
 
     def extract_pack_name(self, file_path: Path) -> str:
@@ -134,42 +138,42 @@ class DatasetGenerator:
         # Assuming structure: .../Songs/PackName/SongName/chart.sm
         try:
             parts = file_path.parts
-            songs_idx = parts.index('Songs')
+            songs_idx = parts.index("Songs")
             if songs_idx + 1 < len(parts):
                 return parts[songs_idx + 1]
         except (ValueError, IndexError):
             pass
-        return 'Unknown'
+        return "Unknown"
 
     def process_chart_file(self, file_path: Path) -> Optional[ChartData]:
         """Parse a single chart file."""
         try:
             chart_data = parse_chart_file(str(file_path), self.target_scale)
-            self.stats['successful_parses'] += 1
+            self.stats["successful_parses"] += 1
             return chart_data
         except Exception as e:
-            self.stats['failed_parses'] += 1
+            self.stats["failed_parses"] += 1
             error_msg = f"{file_path}: {str(e)}"
-            self.stats['errors'].append(error_msg)
+            self.stats["errors"].append(error_msg)
             logger.error(f"Failed to parse {file_path}: {e}")
             return None
 
     # Thresholds for data-quality checks
-    _WARN_SPARSE_NOTES = 30        # fewer notes than this is suspicious for any rated chart
-    _WARN_SPARSE_FOR_RATING = 6    # original_rating >= this with very few notes
-    _WARN_HIGH_NPS = 30.0          # notes/sec above this suggests a BPM parse error
-    _WARN_SHORT_SONG = 10.0        # chart length in seconds below this is suspicious
+    _WARN_SPARSE_NOTES = 30  # fewer notes than this is suspicious for any rated chart
+    _WARN_SPARSE_FOR_RATING = 6  # original_rating >= this with very few notes
+    _WARN_HIGH_NPS = 30.0  # notes/sec above this suggests a BPM parse error
+    _WARN_SHORT_SONG = 10.0  # chart length in seconds below this is suspicious
 
     def _check_chart_quality(self, row: Dict, file_path: Path):
         """Collect warnings for implausible chart entries."""
-        title       = row.get('title', '?')
-        ctype       = row.get('chart_type', '?')
-        diff        = row.get('difficulty', '?')
-        rating      = row.get('original_rating', 0) or 0
-        nps         = row.get('notes_per_second', 0) or 0
-        total       = row.get('total_notes', 0) or 0
-        length      = row.get('chart_length_seconds', 0) or 0
-        path_str    = str(file_path)
+        title = row.get("title", "?")
+        ctype = row.get("chart_type", "?")
+        diff = row.get("difficulty", "?")
+        rating = row.get("original_rating", 0) or 0
+        nps = row.get("notes_per_second", 0) or 0
+        total = row.get("total_notes", 0) or 0
+        length = row.get("chart_length_seconds", 0) or 0
+        path_str = str(file_path)
 
         issues = []
         if total < self._WARN_SPARSE_NOTES and rating >= self._WARN_SPARSE_FOR_RATING:
@@ -180,16 +184,20 @@ class DatasetGenerator:
             issues.append(f"chart length only {length:.1f}s")
 
         for issue in issues:
-            self.stats['data_warnings'].append({
-                'file': path_str,
-                'title': title,
-                'chart_type': ctype,
-                'difficulty': diff,
-                'original_rating': rating,
-                'issue': issue,
-            })
+            self.stats["data_warnings"].append(
+                {
+                    "file": path_str,
+                    "title": title,
+                    "chart_type": ctype,
+                    "difficulty": diff,
+                    "original_rating": rating,
+                    "issue": issue,
+                }
+            )
 
-    def extract_chart_features(self, chart_data: ChartData, file_path: Path) -> List[Dict]:
+    def extract_chart_features(
+        self, chart_data: ChartData, file_path: Path
+    ) -> List[Dict]:
         """Extract features from all difficulty levels in a chart."""
         rows = []
         pack_name = self.extract_pack_name(file_path)
@@ -204,7 +212,9 @@ class DatasetGenerator:
                 # Get normalized rating for this difficulty
                 # The key format is "{chart_type}_{difficulty}"
                 difficulty_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
-                normalized_rating = chart_data.normalized_ratings.get(difficulty_key, chart.rating)
+                normalized_rating = chart_data.normalized_ratings.get(
+                    difficulty_key, chart.rating
+                )
 
                 # Build complete row with metadata
                 # NOTE: feature_dict is unpacked first, then we override its normalized_rating
@@ -212,25 +222,24 @@ class DatasetGenerator:
                 row = {
                     # All extracted features (includes a default normalized_rating: 0.0)
                     **feature_dict,
-
                     # File metadata (override/add)
-                    'file_path': str(file_path.relative_to(self.songs_dir.parent)),
-                    'pack_name': pack_name,
-                    'file_format': file_format,
-
+                    "file_path": str(file_path.relative_to(self.songs_dir.parent)),
+                    "pack_name": pack_name,
+                    "file_format": file_format,
                     # Chart metadata
-                    'title': chart_data.title,
-                    'artist': chart_data.artist,
-                    'genre': chart_data.genre or '',
-                    'credit': chart_data.credit or '',
-
+                    "title": chart_data.title,
+                    "artist": chart_data.artist,
+                    "genre": chart_data.genre or "",
+                    "credit": chart_data.credit or "",
                     # Chart-specific info
-                    'chart_type': chart.chart_type.value,
-                    'difficulty': chart.difficulty.value,
-                    'original_rating': chart.rating,
-                    'normalized_rating': normalized_rating,  # Override the 0.0 from feature_dict
-                    'detected_scale': chart_data.detected_scale.value if chart_data.detected_scale else 'unknown',
-                    'scale_confidence': chart_data.scale_confidence,
+                    "chart_type": chart.chart_type.value,
+                    "difficulty": chart.difficulty.value,
+                    "original_rating": chart.rating,
+                    "normalized_rating": normalized_rating,  # Override the 0.0 from feature_dict
+                    "detected_scale": chart_data.detected_scale.value
+                    if chart_data.detected_scale
+                    else "unknown",
+                    "scale_confidence": chart_data.scale_confidence,
                 }
 
                 # Add performance features if enricher is available
@@ -238,7 +247,7 @@ class DatasetGenerator:
                     perf_features = self.performance_enricher.get_performance_features(
                         str(file_path.relative_to(self.songs_dir.parent)),
                         chart.difficulty.value,
-                        chart.chart_type.value
+                        chart.chart_type.value,
                     )
                     row.update(perf_features)
 
@@ -246,16 +255,18 @@ class DatasetGenerator:
                 rows.append(row)
 
                 # Update statistics
-                self.stats['total_charts'] += 1
-                self.stats['charts_by_format'][file_format] += 1
-                self.stats['charts_by_difficulty'][chart.difficulty.value] += 1
+                self.stats["total_charts"] += 1
+                self.stats["charts_by_format"][file_format] += 1
+                self.stats["charts_by_difficulty"][chart.difficulty.value] += 1
                 if chart_data.detected_scale:
-                    self.stats['charts_by_scale'][chart_data.detected_scale.value] += 1
+                    self.stats["charts_by_scale"][chart_data.detected_scale.value] += 1
 
             except Exception as e:
                 error_msg = f"{file_path} ({chart.difficulty.value}): {str(e)}"
-                self.stats['errors'].append(error_msg)
-                logger.error(f"Failed to extract features from {file_path} ({chart.difficulty.value}): {e}")
+                self.stats["errors"].append(error_msg)
+                logger.error(
+                    f"Failed to extract features from {file_path} ({chart.difficulty.value}): {e}"
+                )
 
         return rows
 
@@ -296,8 +307,8 @@ class DatasetGenerator:
         if self.ground_truth:
             df = self.ground_truth.apply(df)
         else:
-            df['ground_truth_rating'] = df['normalized_rating']
-            df['has_ground_truth'] = False
+            df["ground_truth_rating"] = df["normalized_rating"]
+            df["has_ground_truth"] = False
 
         elapsed_time = time.time() - start_time
         logger.info(f"\nDataset generation complete in {elapsed_time:.2f}s")
@@ -313,53 +324,54 @@ class DatasetGenerator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Save as CSV
-        csv_path = self.output_dir / 'dataset.csv'
+        csv_path = self.output_dir / "dataset.csv"
         logger.info(f"\nSaving CSV to {csv_path}...")
         df.to_csv(csv_path, index=False)
         logger.info(f"  Saved {len(df)} rows, {len(df.columns)} columns")
 
         # Save as Parquet (more efficient for large datasets)
-        parquet_path = self.output_dir / 'dataset.parquet'
+        parquet_path = self.output_dir / "dataset.parquet"
         logger.info(f"Saving Parquet to {parquet_path}...")
-        df.to_parquet(parquet_path, index=False, compression='snappy')
+        df.to_parquet(parquet_path, index=False, compression="snappy")
         logger.info(f"  Saved {len(df)} rows, {len(df.columns)} columns")
 
         # Save column info
         column_info = {
-            'columns': list(df.columns),
-            'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
-            'shape': df.shape
+            "columns": list(df.columns),
+            "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
+            "shape": df.shape,
         }
-        column_info_path = self.output_dir / 'dataset_info.json'
-        with open(column_info_path, 'w') as f:
+        column_info_path = self.output_dir / "dataset_info.json"
+        with open(column_info_path, "w") as f:
             json.dump(column_info, f, indent=2)
         logger.info(f"Saved column info to {column_info_path}")
 
     def save_statistics(self):
         """Save generation statistics to JSON."""
-        stats_path = self.output_dir / 'generation_stats.json'
+        stats_path = self.output_dir / "generation_stats.json"
         logger.info(f"\nSaving statistics to {stats_path}...")
 
         # Convert defaultdict to regular dict for JSON serialization
         stats = {
-            'total_files': self.stats['total_files'],
-            'successful_parses': self.stats['successful_parses'],
-            'failed_parses': self.stats['failed_parses'],
-            'parse_success_rate': (
-                self.stats['successful_parses'] / self.stats['total_files'] * 100
-                if self.stats['total_files'] > 0 else 0
+            "total_files": self.stats["total_files"],
+            "successful_parses": self.stats["successful_parses"],
+            "failed_parses": self.stats["failed_parses"],
+            "parse_success_rate": (
+                self.stats["successful_parses"] / self.stats["total_files"] * 100
+                if self.stats["total_files"] > 0
+                else 0
             ),
-            'total_charts': self.stats['total_charts'],
-            'charts_by_format': dict(self.stats['charts_by_format']),
-            'charts_by_scale': dict(self.stats['charts_by_scale']),
-            'charts_by_difficulty': dict(self.stats['charts_by_difficulty']),
-            'error_count': len(self.stats['errors']),
-            'errors': self.stats['errors'][:100],  # Limit to first 100 errors
-            'data_warning_count': len(self.stats['data_warnings']),
-            'data_warnings': self.stats['data_warnings'],
+            "total_charts": self.stats["total_charts"],
+            "charts_by_format": dict(self.stats["charts_by_format"]),
+            "charts_by_scale": dict(self.stats["charts_by_scale"]),
+            "charts_by_difficulty": dict(self.stats["charts_by_difficulty"]),
+            "error_count": len(self.stats["errors"]),
+            "errors": self.stats["errors"][:100],  # Limit to first 100 errors
+            "data_warning_count": len(self.stats["data_warnings"]),
+            "data_warnings": self.stats["data_warnings"],
         }
 
-        with open(stats_path, 'w') as f:
+        with open(stats_path, "w") as f:
             json.dump(stats, f, indent=2)
 
     def print_summary(self, df: pd.DataFrame):
@@ -368,48 +380,63 @@ class DatasetGenerator:
         logger.info("DATASET GENERATION SUMMARY")
         logger.info("=" * 60)
 
-        logger.info(f"\nFile Processing:")
+        logger.info("\nFile Processing:")
         logger.info(f"  Total files found: {self.stats['total_files']}")
         logger.info(f"  Successfully parsed: {self.stats['successful_parses']}")
         logger.info(f"  Failed to parse: {self.stats['failed_parses']}")
         success_rate = (
-            self.stats['successful_parses'] / self.stats['total_files'] * 100
-            if self.stats['total_files'] > 0 else 0
+            self.stats["successful_parses"] / self.stats["total_files"] * 100
+            if self.stats["total_files"] > 0
+            else 0
         )
         logger.info(f"  Success rate: {success_rate:.1f}%")
 
-        logger.info(f"\nChart Statistics:")
+        logger.info("\nChart Statistics:")
         logger.info(f"  Total charts extracted: {self.stats['total_charts']}")
 
-        logger.info(f"\n  By format:")
-        for fmt, count in sorted(self.stats['charts_by_format'].items()):
+        logger.info("\n  By format:")
+        for fmt, count in sorted(self.stats["charts_by_format"].items()):
             logger.info(f"    {fmt}: {count}")
 
-        logger.info(f"\n  By scale:")
-        for scale, count in sorted(self.stats['charts_by_scale'].items()):
+        logger.info("\n  By scale:")
+        for scale, count in sorted(self.stats["charts_by_scale"].items()):
             logger.info(f"    {scale}: {count}")
 
-        logger.info(f"\n  By difficulty:")
-        for diff, count in sorted(self.stats['charts_by_difficulty'].items()):
+        logger.info("\n  By difficulty:")
+        for diff, count in sorted(self.stats["charts_by_difficulty"].items()):
             logger.info(f"    {diff}: {count}")
 
         if not df.empty:
-            logger.info(f"\nDataset Shape:")
+            logger.info("\nDataset Shape:")
             logger.info(f"  Rows: {len(df)}")
             logger.info(f"  Columns: {len(df.columns)}")
-            logger.info(f"  Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
+            logger.info(
+                f"  Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
+            )
 
-            logger.info(f"\nRating Statistics:")
-            logger.info(f"  Original rating range: {df['original_rating'].min():.1f} - {df['original_rating'].max():.1f}")
-            logger.info(f"  Normalized rating range: {df['normalized_rating'].min():.1f} - {df['normalized_rating'].max():.1f}")
-            logger.info(f"  Mean normalized rating: {df['normalized_rating'].mean():.2f} ± {df['normalized_rating'].std():.2f}")
+            logger.info("\nRating Statistics:")
+            logger.info(
+                f"  Original rating range: {df['original_rating'].min():.1f} - {df['original_rating'].max():.1f}"
+            )
+            logger.info(
+                f"  Normalized rating range: {df['normalized_rating'].min():.1f} - {df['normalized_rating'].max():.1f}"
+            )
+            logger.info(
+                f"  Mean normalized rating: {df['normalized_rating'].mean():.2f} ± {df['normalized_rating'].std():.2f}"
+            )
 
-            if 'has_ground_truth' in df.columns:
-                n_gt = int(df['has_ground_truth'].sum())
+            if "has_ground_truth" in df.columns:
+                n_gt = int(df["has_ground_truth"].sum())
                 logger.info(f"\nGround Truth Overrides: {n_gt} row(s)")
                 if n_gt > 0:
-                    gt_rows = df[df['has_ground_truth']][
-                        ['title', 'chart_type', 'difficulty', 'normalized_rating', 'ground_truth_rating']
+                    gt_rows = df[df["has_ground_truth"]][
+                        [
+                            "title",
+                            "chart_type",
+                            "difficulty",
+                            "normalized_rating",
+                            "ground_truth_rating",
+                        ]
                     ]
                     for _, r in gt_rows.iterrows():
                         logger.info(
@@ -417,20 +444,20 @@ class DatasetGenerator:
                             f" norm={r['normalized_rating']:.1f} → gt={r['ground_truth_rating']:.1f}"
                         )
 
-        if self.stats['errors']:
-            logger.info(f"\nErrors:")
+        if self.stats["errors"]:
+            logger.info("\nErrors:")
             logger.info(f"  Total errors: {len(self.stats['errors'])}")
-            logger.info(f"  First 5 errors:")
-            for error in self.stats['errors'][:5]:
+            logger.info("  First 5 errors:")
+            for error in self.stats["errors"][:5]:
                 logger.info(f"    - {error}")
 
-        warnings = self.stats['data_warnings']
+        warnings = self.stats["data_warnings"]
         logger.info(f"\nData Quality Warnings: {len(warnings)}")
         if warnings:
             logger.info(f"  {'File':<55} {'Type':<14} {'Diff':<10} {'Rtg':>4}  Issue")
-            logger.info(f"  {'-'*55} {'-'*14} {'-'*10} {'-'*4}  {'-'*40}")
+            logger.info(f"  {'-' * 55} {'-' * 14} {'-' * 10} {'-' * 4}  {'-' * 40}")
             for w in warnings:
-                short_file = '/'.join(w['file'].replace('\\', '/').split('/')[-3:])
+                short_file = "/".join(w["file"].replace("\\", "/").split("/")[-3:])
                 logger.info(
                     f"  {short_file:<55} {w['chart_type']:<14} {w['difficulty']:<10}"
                     f" {w['original_rating']:>4}  {w['issue']}"
@@ -439,79 +466,96 @@ class DatasetGenerator:
         # Performance enrichment statistics
         if self.performance_enricher:
             enrichment_stats = self.performance_enricher.get_stats()
-            logger.info(f"\nPerformance Enrichment:")
-            logger.info(f"  Charts with performance data: {enrichment_stats['charts_with_performance_data']}")
-            logger.info(f"  Total charts processed: {enrichment_stats['total_charts_processed']}")
+            logger.info("\nPerformance Enrichment:")
+            logger.info(
+                f"  Charts with performance data: {enrichment_stats['charts_with_performance_data']}"
+            )
+            logger.info(
+                f"  Total charts processed: {enrichment_stats['total_charts_processed']}"
+            )
             logger.info(f"  Match rate: {enrichment_stats['match_rate_percent']:.1f}%")
-            logger.info(f"  Songs in Stats.xml: {enrichment_stats['total_songs_in_stats']}")
+            logger.info(
+                f"  Songs in Stats.xml: {enrichment_stats['total_songs_in_stats']}"
+            )
 
             # Show performance data stats from DataFrame
-            if not df.empty and 'has_performance_data' in df.columns:
-                charts_with_data = df['has_performance_data'].sum()
-                avg_plays = df[df['times_played'] > 0]['times_played'].mean() if any(df['times_played'] > 0) else 0
+            if not df.empty and "has_performance_data" in df.columns:
+                charts_with_data = df["has_performance_data"].sum()
+                logger.info(f"  Charts with performance data (df): {charts_with_data}")
+                avg_plays = (
+                    df[df["times_played"] > 0]["times_played"].mean()
+                    if any(df["times_played"] > 0)
+                    else 0
+                )
                 logger.info(f"  Average plays (played charts): {avg_plays:.1f}")
 
-                if 'best_accuracy' in df.columns:
-                    accuracy_data = df[df['best_accuracy'].notna()]
+                if "best_accuracy" in df.columns:
+                    accuracy_data = df[df["best_accuracy"].notna()]
                     if len(accuracy_data) > 0:
-                        logger.info(f"  Charts with accuracy data: {len(accuracy_data)}")
-                        logger.info(f"  Average best accuracy: {accuracy_data['best_accuracy'].mean():.2%}")
+                        logger.info(
+                            f"  Charts with accuracy data: {len(accuracy_data)}"
+                        )
+                        logger.info(
+                            f"  Average best accuracy: {accuracy_data['best_accuracy'].mean():.2%}"
+                        )
 
         logger.info("\n" + "=" * 60)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate ML dataset from StepMania chart collection'
+        description="Generate ML dataset from StepMania chart collection"
     )
     stepml_root = get_stepml_root()
     data_dir = get_data_dir()
-    
+
     parser.add_argument(
-        '--songs-dir',
+        "--songs-dir",
         type=Path,
-        default=stepml_root.parent / 'Songs',
-        help='Path to Songs directory (default: ../Songs)'
+        default=stepml_root.parent / "Songs",
+        help="Path to Songs directory (default: ../Songs)",
     )
     parser.add_argument(
-        '--output-dir',
+        "--output-dir",
         type=Path,
-        default=data_dir / 'processed',
-        help='Output directory for dataset files (default: ./data/processed)'
+        default=data_dir / "processed",
+        help="Output directory for dataset files (default: ./data/processed)",
     )
     parser.add_argument(
-        '--stats-file',
+        "--stats-file",
         type=Path,
-        default=stepml_root.parent / 'Save' / 'LocalProfiles' / '00000000' / 'Stats.xml',
-        help='Path to Stats.xml for performance enrichment (default: ../Save/LocalProfiles/00000000/Stats.xml)'
+        default=stepml_root.parent
+        / "Save"
+        / "LocalProfiles"
+        / "00000000"
+        / "Stats.xml",
+        help="Path to Stats.xml for performance enrichment (default: ../Save/LocalProfiles/00000000/Stats.xml)",
     )
     parser.add_argument(
-        '--ground-truth',
+        "--ground-truth",
         type=Path,
-        default=stepml_root / 'ground_truth_ratings.yaml',
-        help='Path to ground truth rating overrides YAML (default: ground_truth_ratings.yaml)'
+        default=stepml_root / "ground_truth_ratings.yaml",
+        help="Path to ground truth rating overrides YAML (default: ground_truth_ratings.yaml)",
     )
     parser.add_argument(
-        '--no-ground-truth',
-        action='store_true',
-        help='Disable ground truth rating overrides'
+        "--no-ground-truth",
+        action="store_true",
+        help="Disable ground truth rating overrides",
     )
     parser.add_argument(
-        '--no-performance',
-        action='store_true',
-        help='Disable performance data enrichment'
+        "--no-performance",
+        action="store_true",
+        help="Disable performance data enrichment",
     )
     parser.add_argument(
-        '--verbose',
-        action='store_true',
-        help='Show progress for every file'
+        "--verbose", action="store_true", help="Show progress for every file"
     )
     parser.add_argument(
-        '--normalization-scale',
+        "--normalization-scale",
         type=str,
-        choices=['classic_ddr', 'modern_ddr', 'itg'],
-        default='modern_ddr',
-        help='Target scale for rating normalization (default: modern_ddr). Options: classic_ddr (1-10), modern_ddr (1-20), itg (1-12)'
+        choices=["classic_ddr", "modern_ddr", "itg"],
+        default="modern_ddr",
+        help="Target scale for rating normalization (default: modern_ddr). Options: classic_ddr (1-10), modern_ddr (1-20), itg (1-12)",
     )
 
     args = parser.parse_args()
@@ -523,12 +567,14 @@ def main():
 
     # Convert normalization scale string to ScaleType enum
     scale_map = {
-        'classic_ddr': ScaleType.CLASSIC_DDR,
-        'modern_ddr': ScaleType.MODERN_DDR,
-        'itg': ScaleType.ITG,
+        "classic_ddr": ScaleType.CLASSIC_DDR,
+        "modern_ddr": ScaleType.MODERN_DDR,
+        "itg": ScaleType.ITG,
     }
     target_scale = scale_map[args.normalization_scale]
-    logger.info(f"Using normalization scale: {args.normalization_scale} ({target_scale.value})")
+    logger.info(
+        f"Using normalization scale: {args.normalization_scale} ({target_scale.value})"
+    )
 
     # Determine stats file (None if disabled or not found)
     stats_file = None
@@ -546,11 +592,14 @@ def main():
         if gt_path.exists():
             ground_truth_file = gt_path
         else:
-            logger.warning(f"Ground truth file not found at {gt_path} — continuing without overrides")
+            logger.warning(
+                f"Ground truth file not found at {gt_path} — continuing without overrides"
+            )
 
     # Generate dataset
-    generator = DatasetGenerator(args.songs_dir, args.output_dir, stats_file, target_scale,
-                                 ground_truth_file)
+    generator = DatasetGenerator(
+        args.songs_dir, args.output_dir, stats_file, target_scale, ground_truth_file
+    )
     df = generator.generate_dataset(verbose=args.verbose)
 
     if not df.empty:
@@ -558,7 +607,7 @@ def main():
         generator.save_statistics()
         generator.print_summary(df)
 
-        logger.info(f"\n✓ Dataset generation complete!")
+        logger.info("\n✓ Dataset generation complete!")
         logger.info(f"  CSV: {args.output_dir / 'dataset.csv'}")
         logger.info(f"  Parquet: {args.output_dir / 'dataset.parquet'}")
         logger.info(f"  Stats: {args.output_dir / 'generation_stats.json'}")
@@ -567,5 +616,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

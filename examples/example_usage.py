@@ -1,9 +1,11 @@
 """
 Example usage of the StepMania chart analysis package.
 """
+
 from pathlib import Path
+
+from features.feature_extractor import AdvancedFeatureExtractor, FeatureExtractor
 from parsers.sm_parser import parse_sm_file
-from features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
 
 
 def analyze_chart(filepath: str):
@@ -59,11 +61,13 @@ def compare_difficulties(filepath: str):
     for chart in sorted(chart_data.charts, key=lambda x: x.rating):
         if chart.chart_type.value == "dance-single":
             features = extractor.extract_features(chart_data, chart)
-            print(f"{chart.difficulty.value:<12} "
-                  f"{chart.rating:<8} "
-                  f"{features.notes_per_second:<8.2f} "
-                  f"{features.peak_density:<8.2f} "
-                  f"{features.jump_ratio:<8.1%}")
+            print(
+                f"{chart.difficulty.value:<12} "
+                f"{chart.rating:<8} "
+                f"{features.notes_per_second:<8.2f} "
+                f"{features.peak_density:<8.2f} "
+                f"{features.jump_ratio:<8.1%}"
+            )
 
 
 def extract_all_features(filepath: str):
@@ -81,7 +85,10 @@ def extract_all_features(filepath: str):
     print("=" * 80)
 
     for chart in chart_data.charts:
-        if chart.chart_type.value == "dance-single" and chart.difficulty.value == "Hard":
+        if (
+            chart.chart_type.value == "dance-single"
+            and chart.difficulty.value == "Hard"
+        ):
             # Basic features
             features = basic_extractor.extract_features(chart_data, chart)
 
@@ -89,19 +96,19 @@ def extract_all_features(filepath: str):
             advanced = advanced_extractor.extract_advanced_features(chart)
 
             print(f"\n{chart.difficulty.value} (Rating {chart.rating}):")
-            print(f"\nDensity:")
+            print("\nDensity:")
             print(f"  Average: {features.average_density:.2f} notes/beat")
             print(f"  Peak: {features.peak_density:.2f} notes/beat")
             print(f"  Variance: {features.density_variance:.4f}")
 
-            print(f"\nPatterns:")
+            print("\nPatterns:")
             print(f"  Jumps: {features.jump_ratio:.2%}")
             print(f"  Holds: {features.hold_ratio:.2%}")
             print(f"  Streams: {advanced['stream_sections']}")
             print(f"  Direction Changes: {advanced['direction_changes']}")
             print(f"  Crossover Potential: {advanced['crossover_potential']:.4f}")
 
-            print(f"\nTiming:")
+            print("\nTiming:")
             print(f"  Length: {features.chart_length_seconds:.1f}s")
             print(f"  BPM Changes: {features.bpm_changes}")
             print(f"  Stops: {features.stop_count}")
@@ -136,23 +143,27 @@ def batch_analyze_pack(pack_path: str):
             hardest = max(chart_data.charts, key=lambda x: x.rating)
             features = extractor.extract_features(chart_data, hardest)
 
-            results.append({
-                'title': chart_data.title,
-                'difficulty': hardest.difficulty.value,
-                'rating': hardest.rating,
-                'nps': features.notes_per_second
-            })
+            results.append(
+                {
+                    "title": chart_data.title,
+                    "difficulty": hardest.difficulty.value,
+                    "rating": hardest.rating,
+                    "nps": features.notes_per_second,
+                }
+            )
         except Exception as e:
             print(f"Error parsing {sm_file.name}: {e}")
 
     # Display results
     print(f"{'Title':<30} {'Difficulty':<12} {'Rating':<8} {'NPS':<8}")
     print("-" * 70)
-    for result in sorted(results, key=lambda x: x['rating'], reverse=True):
-        print(f"{result['title'][:29]:<30} "
-              f"{result['difficulty']:<12} "
-              f"{result['rating']:<8} "
-              f"{result['nps']:<8.2f}")
+    for result in sorted(results, key=lambda x: x["rating"], reverse=True):
+        print(
+            f"{result['title'][:29]:<30} "
+            f"{result['difficulty']:<12} "
+            f"{result['rating']:<8} "
+            f"{result['nps']:<8.2f}"
+        )
 
 
 if __name__ == "__main__":
@@ -179,5 +190,7 @@ if __name__ == "__main__":
     else:
         print("Usage:")
         print(f"  python {sys.argv[0]} <path-to-sm-file>")
-        print(f"\nExample:")
-        print(f"  python {sys.argv[0]} Songs/StepMania\\ 5/Goin\\'\\ Under/Goin\\'\\ Under.sm")
+        print("\nExample:")
+        print(
+            f"  python {sys.argv[0]} Songs/StepMania\\ 5/Goin\\'\\ Under/Goin\\'\\ Under.sm"
+        )

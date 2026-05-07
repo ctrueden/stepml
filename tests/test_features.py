@@ -4,11 +4,10 @@ Regression tests for feature extraction.
 These tests ensure feature extraction continues to produce consistent,
 accurate results across parser updates.
 """
-import json
+
 import pytest
 
 from stepml.parsers.sm_parser import parse_sm_file
-from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
 from stepml.utils.data_structures import FeatureSet
 
 
@@ -16,7 +15,9 @@ from stepml.utils.data_structures import FeatureSet
 class TestFeatureExtraction:
     """Basic feature extraction tests."""
 
-    def test_feature_extractor_returns_featureset(self, test_chart_paths, feature_extractor):
+    def test_feature_extractor_returns_featureset(
+        self, test_chart_paths, feature_extractor
+    ):
         """Feature extractor should return FeatureSet object."""
         if not test_chart_paths:
             pytest.skip("No test charts available")
@@ -43,13 +44,18 @@ class TestFeatureExtraction:
 
                 # Density metrics should be non-negative
                 assert features.notes_per_second >= 0, "NPS should be non-negative"
-                assert features.average_density >= 0, "Average density should be non-negative"
+                assert features.average_density >= 0, (
+                    "Average density should be non-negative"
+                )
                 assert features.peak_density >= 0, "Peak density should be non-negative"
-                assert features.density_variance >= 0, "Density variance should be non-negative"
+                assert features.density_variance >= 0, (
+                    "Density variance should be non-negative"
+                )
 
                 # Peak should be >= average
-                assert features.peak_density >= features.average_density, \
+                assert features.peak_density >= features.average_density, (
                     "Peak density should be >= average density"
+                )
 
                 # Ratios should be between 0 and 1
                 assert 0 <= features.jump_ratio <= 1, "Jump ratio should be in [0,1]"
@@ -61,11 +67,17 @@ class TestFeatureExtraction:
                 assert features.bpm_changes >= 0, "BPM changes should be non-negative"
                 assert features.bpm_variance >= 0, "BPM variance should be non-negative"
                 assert features.stop_count >= 0, "Stop count should be non-negative"
-                assert features.total_stop_duration >= 0, "Stop duration should be non-negative"
+                assert features.total_stop_duration >= 0, (
+                    "Stop duration should be non-negative"
+                )
 
                 # Length metrics
-                assert features.chart_length_seconds > 0, "Chart length should be positive"
-                assert features.chart_length_beats > 0, "Chart length in beats should be positive"
+                assert features.chart_length_seconds > 0, (
+                    "Chart length should be positive"
+                )
+                assert features.chart_length_beats > 0, (
+                    "Chart length in beats should be positive"
+                )
                 assert features.total_notes >= 0, "Total notes should be non-negative"
 
     def test_features_to_dict(self, test_chart_paths, feature_extractor):
@@ -87,16 +99,30 @@ class TestFeatureExtraction:
 
         # Should have numerical values
         for key, value in feature_dict.items():
-            assert isinstance(value, (int, float)), \
+            assert isinstance(value, (int, float)), (
                 f"Feature {key} should be numerical, got {type(value)}"
+            )
 
         # Should have expected keys
         expected_keys = [
-            'notes_per_second', 'peak_density', 'density_variance', 'average_density',
-            'jump_ratio', 'hold_ratio', 'roll_ratio', 'mine_ratio',
-            'bpm_changes', 'bpm_variance', 'stop_count', 'total_stop_duration',
-            'total_notes', 'chart_length_seconds', 'chart_length_beats',
-            'original_rating', 'scale_confidence', 'normalized_rating'
+            "notes_per_second",
+            "peak_density",
+            "density_variance",
+            "average_density",
+            "jump_ratio",
+            "hold_ratio",
+            "roll_ratio",
+            "mine_ratio",
+            "bpm_changes",
+            "bpm_variance",
+            "stop_count",
+            "total_stop_duration",
+            "total_notes",
+            "chart_length_seconds",
+            "chart_length_beats",
+            "original_rating",
+            "scale_confidence",
+            "normalized_rating",
         ]
 
         for key in expected_keys:
@@ -107,7 +133,9 @@ class TestFeatureExtraction:
 class TestAdvancedFeatures:
     """Tests for advanced feature extraction."""
 
-    def test_advanced_features_structure(self, test_chart_paths, advanced_feature_extractor):
+    def test_advanced_features_structure(
+        self, test_chart_paths, advanced_feature_extractor
+    ):
         """Advanced features should return dict with expected keys."""
         if not test_chart_paths:
             pytest.skip("No test charts available")
@@ -118,17 +146,21 @@ class TestAdvancedFeatures:
         if not chart_data.charts:
             pytest.skip("No charts found in test file")
 
-        features = advanced_feature_extractor.extract_advanced_features(chart_data.charts[0])
+        features = advanced_feature_extractor.extract_advanced_features(
+            chart_data.charts[0]
+        )
 
         # Should be a dict
         assert isinstance(features, dict)
 
         # Should have expected keys
-        expected_keys = ['stream_sections', 'direction_changes', 'crossover_potential']
+        expected_keys = ["stream_sections", "direction_changes", "crossover_potential"]
         for key in expected_keys:
             assert key in features, f"Expected key '{key}' not found"
 
-    def test_advanced_features_are_valid(self, test_chart_paths, advanced_feature_extractor):
+    def test_advanced_features_are_valid(
+        self, test_chart_paths, advanced_feature_extractor
+    ):
         """Advanced feature values should be valid."""
         if not test_chart_paths:
             pytest.skip("No test charts available")
@@ -139,10 +171,15 @@ class TestAdvancedFeatures:
             for chart in chart_data.charts:
                 features = advanced_feature_extractor.extract_advanced_features(chart)
 
-                assert features['stream_sections'] >= 0, "Stream sections should be non-negative"
-                assert features['direction_changes'] >= 0, "Direction changes should be non-negative"
-                assert 0 <= features['crossover_potential'] <= 1, \
+                assert features["stream_sections"] >= 0, (
+                    "Stream sections should be non-negative"
+                )
+                assert features["direction_changes"] >= 0, (
+                    "Direction changes should be non-negative"
+                )
+                assert 0 <= features["crossover_potential"] <= 1, (
                     "Crossover potential should be in [0,1]"
+                )
 
 
 @pytest.mark.features
@@ -155,7 +192,9 @@ class TestFeatureRegression:
     to detect unintended changes in feature computation.
     """
 
-    def test_features_match_baseline(self, test_chart_paths, baseline_features, feature_extractor):
+    def test_features_match_baseline(
+        self, test_chart_paths, baseline_features, feature_extractor
+    ):
         """Current features should match baseline within tolerance."""
         baseline_data = baseline_features.get("baseline_data", {})
 
@@ -214,12 +253,14 @@ class TestFeatureRegression:
                             )
                     else:
                         # For non-zero baseline, use relative tolerance
-                        relative_diff = abs(current_value - baseline_value) / abs(baseline_value)
+                        relative_diff = abs(current_value - baseline_value) / abs(
+                            baseline_value
+                        )
                         if relative_diff > RELATIVE_TOLERANCE:
                             mismatches.append(
                                 f"{chart_name}/{chart_key}/{feature_name}: "
                                 f"Expected {baseline_value:.6f}, got {current_value:.6f} "
-                                f"(diff: {relative_diff*100:.2f}%)"
+                                f"(diff: {relative_diff * 100:.2f}%)"
                             )
 
         # Report all mismatches
@@ -254,12 +295,16 @@ class TestFeatureRegression:
                 if chart_key not in baseline_charts:
                     continue
 
-                baseline_advanced = baseline_charts[chart_key].get("advanced_features", {})
+                baseline_advanced = baseline_charts[chart_key].get(
+                    "advanced_features", {}
+                )
                 if not baseline_advanced:
                     continue
 
                 # Extract current advanced features
-                current_advanced = advanced_feature_extractor.extract_advanced_features(chart)
+                current_advanced = advanced_feature_extractor.extract_advanced_features(
+                    chart
+                )
 
                 # Compare each advanced feature
                 for feature_name, baseline_value in baseline_advanced.items():
@@ -334,15 +379,23 @@ class TestFeatureEdgeCases:
                 if lowest_chart.rating == highest_chart.rating:
                     continue
 
-                lowest_features = feature_extractor.extract_features(chart_data, lowest_chart)
-                highest_features = feature_extractor.extract_features(chart_data, highest_chart)
+                lowest_features = feature_extractor.extract_features(
+                    chart_data, lowest_chart
+                )
+                highest_features = feature_extractor.extract_features(
+                    chart_data, highest_chart
+                )
 
                 # Higher difficulty should have higher density
-                assert highest_features.notes_per_second >= lowest_features.notes_per_second, \
-                    f"Higher difficulty should have higher NPS"
+                assert (
+                    highest_features.notes_per_second
+                    >= lowest_features.notes_per_second
+                ), "Higher difficulty should have higher NPS"
 
                 # Higher difficulty should have more total notes (generally)
                 # Note: Some charts may have fewer notes at higher difficulty if they're shorter
                 # but they should have higher density
-                assert highest_features.average_density >= lowest_features.average_density * 0.8, \
-                    f"Higher difficulty should have comparable or higher density"
+                assert (
+                    highest_features.average_density
+                    >= lowest_features.average_density * 0.8
+                ), "Higher difficulty should have comparable or higher density"

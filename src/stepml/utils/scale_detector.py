@@ -4,17 +4,19 @@ Scale detection for StepMania song packs.
 Automatically detects which rating scale a song pack uses based on
 pack name, path patterns, and statistical analysis of ratings.
 """
+
 import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 try:
     import yaml
+
     _YAML_AVAILABLE = True
 except ImportError:
     _YAML_AVAILABLE = False
 
-from stepml.utils.data_structures import ScaleType, ChartData, NoteData
+from stepml.utils.data_structures import ChartData, NoteData, ScaleType
 
 # stepml root = four levels up from this file:
 # src/stepml/utils/scale_detector.py → src/stepml/utils → src/stepml → src → project root
@@ -29,8 +31,8 @@ class ScaleDetector:
         # Original DDR series (1st - Extreme)
         r"^DDR\s+(1st|2nd|3rd|4th|5th|6th|7th)\s+Mix",
         r"^DDR\s+EXTREME($|\s+[^2])",  # EXTREME but not EXTREME 2
-        r"^DDR\s+MAX($|\s*[^2])",      # MAX but not MAX2
-        r"^DDR\s+SuperNOVA\s*1?$",     # SuperNOVA 1
+        r"^DDR\s+MAX($|\s*[^2])",  # MAX but not MAX2
+        r"^DDR\s+SuperNOVA\s*1?$",  # SuperNOVA 1
         r"^DDR\s+Disney",
         r"^DDR\s+Solo",
         r"^DDRei\s+Tournamix",
@@ -51,16 +53,16 @@ class ScaleDetector:
 
     MODERN_DDR_PATTERNS = [
         # Modern DDR with 1-20 scale
-        r"^DDR\s+X($|\d+|\s)",         # DDR X, X2, X3 series
-        r"^DDR\s+A($|\d+)?$",          # DDR A, A20, A3
-        r"^DDR\s+20\d{2}",             # DDR 2013, 2014, etc.
-        r"^DDR\s+SuperNOVA\s*2",       # SuperNOVA 2
-        r"^DDR\s+Extreme\s+2",         # Extreme 2 (transition era)
+        r"^DDR\s+X($|\d+|\s)",  # DDR X, X2, X3 series
+        r"^DDR\s+A($|\d+)?$",  # DDR A, A20, A3
+        r"^DDR\s+20\d{2}",  # DDR 2013, 2014, etc.
+        r"^DDR\s+SuperNOVA\s*2",  # SuperNOVA 2
+        r"^DDR\s+Extreme\s+2",  # Extreme 2 (transition era)
     ]
 
     ITG_PATTERNS = [
         # In The Groove series
-        r"^ITG($|\s+\d+)",             # ITG, ITG 2, ITG 3, etc.
+        r"^ITG($|\s+\d+)",  # ITG, ITG 2, ITG 3, etc.
         r"In\s+the\s+Groove",
         r"ITG\s+Rebirth",
         # Community packs often follow ITG scale
@@ -73,29 +75,35 @@ class ScaleDetector:
     ]
 
     _SCALE_NAME_MAP = {
-        'classic_ddr': ScaleType.CLASSIC_DDR,
-        'modern_ddr': ScaleType.MODERN_DDR,
-        'itg': ScaleType.ITG,
+        "classic_ddr": ScaleType.CLASSIC_DDR,
+        "modern_ddr": ScaleType.MODERN_DDR,
+        "itg": ScaleType.ITG,
     }
 
     def __init__(self):
         """Initialize the scale detector."""
         # Compile regex patterns for performance
-        self.classic_ddr_regex = [re.compile(p, re.IGNORECASE) for p in self.CLASSIC_DDR_PATTERNS]
-        self.modern_ddr_regex = [re.compile(p, re.IGNORECASE) for p in self.MODERN_DDR_PATTERNS]
+        self.classic_ddr_regex = [
+            re.compile(p, re.IGNORECASE) for p in self.CLASSIC_DDR_PATTERNS
+        ]
+        self.modern_ddr_regex = [
+            re.compile(p, re.IGNORECASE) for p in self.MODERN_DDR_PATTERNS
+        ]
         self.itg_regex = [re.compile(p, re.IGNORECASE) for p in self.ITG_PATTERNS]
 
         # Load pack-level scale overrides from pack_scales.yaml (if present).
         # These kick in only when both pattern and statistical detection fail.
         self._pack_overrides: List[Dict] = []
         if _YAML_AVAILABLE:
-            override_path = _STEPML_ROOT / 'pack_scales.yaml'
+            override_path = _STEPML_ROOT / "pack_scales.yaml"
             if override_path.exists():
                 with open(override_path) as f:
                     data = yaml.safe_load(f)
-                self._pack_overrides = data.get('overrides', [])
+                self._pack_overrides = data.get("overrides", [])
 
-    def detect_scale(self, songpack_path: str, chart_data: Optional['ChartData'] = None) -> Tuple[ScaleType, float]:
+    def detect_scale(
+        self, songpack_path: str, chart_data: Optional["ChartData"] = None
+    ) -> Tuple[ScaleType, float]:
         """
         Detect the rating scale type for a songpack.
 
@@ -122,9 +130,9 @@ class ScaleDetector:
             # For non-existent paths (e.g., in tests), try to extract pack name
             # Assume structure like: /Songs/PackName/... or PackName/...
             parts = path.parts
-            if len(parts) >= 2 and 'Songs' in parts:
+            if len(parts) >= 2 and "Songs" in parts:
                 # Find 'Songs' in path and take the next part
-                songs_idx = parts.index('Songs')
+                songs_idx = parts.index("Songs")
                 if songs_idx + 1 < len(parts):
                     songpack_name = parts[songs_idx + 1]
                 else:
@@ -146,7 +154,9 @@ class ScaleDetector:
         # Combine detections
         return self._combine_detections(name_detection, stats_detection)
 
-    def _detect_from_name(self, songpack_name: str) -> Tuple[Optional[ScaleType], float]:
+    def _detect_from_name(
+        self, songpack_name: str
+    ) -> Tuple[Optional[ScaleType], float]:
         """
         Detect scale type from songpack name pattern matching.
 
@@ -171,15 +181,17 @@ class ScaleDetector:
         # Check pack_scales.yaml overrides (case-insensitive substring match)
         name_lower = songpack_name.lower()
         for entry in self._pack_overrides:
-            if entry.get('pack', '').lower() in name_lower:
-                scale = self._SCALE_NAME_MAP.get(entry.get('scale', ''))
+            if entry.get("pack", "").lower() in name_lower:
+                scale = self._SCALE_NAME_MAP.get(entry.get("scale", ""))
                 if scale:
                     return (scale, 0.80)
 
         # Unknown pack name
         return (None, 0.0)
 
-    def _detect_from_statistics(self, chart_data: 'ChartData') -> Tuple[Optional[ScaleType], float]:
+    def _detect_from_statistics(
+        self, chart_data: "ChartData"
+    ) -> Tuple[Optional[ScaleType], float]:
         """
         Detect scale type from statistical analysis of chart ratings and density.
 
@@ -205,7 +217,7 @@ class ScaleDetector:
         # Calculate NPS for high-rated charts
         # NPS = total_notes / song_length_seconds
         # song_length_seconds = chart_length_beats / (bpm / 60)
-        def calc_nps(chart: 'NoteData') -> float:
+        def calc_nps(chart: "NoteData") -> float:
             if chart.total_notes == 0 or not chart_data.bpms:
                 return 0.0
             # Use the first BPM as baseline (simplified)
@@ -214,7 +226,11 @@ class ScaleDetector:
             if chart.note_positions:
                 last_beat = max(pos[0] for pos in chart.note_positions)
                 song_length_seconds = (last_beat / base_bpm) * 60.0
-                return chart.total_notes / song_length_seconds if song_length_seconds > 0 else 0.0
+                return (
+                    chart.total_notes / song_length_seconds
+                    if song_length_seconds > 0
+                    else 0.0
+                )
             return 0.0
 
         # Very high ratings are definitive modern DDR signal
@@ -222,7 +238,7 @@ class ScaleDetector:
             return (ScaleType.MODERN_DDR, 0.98)
         elif max_rating > 12:
             return (ScaleType.MODERN_DDR, 0.95)
-        
+
         # For ratings 11-12: check NPS density to distinguish extended classic from modern
         # Modern 11-12: typically ~3-5 NPS (lower density, inflated ratings)
         # Classic extended 11-12: typically ~7-15+ NPS (genuinely difficult)
@@ -266,7 +282,7 @@ class ScaleDetector:
     def _combine_detections(
         self,
         name_detection: Tuple[Optional[ScaleType], float],
-        stats_detection: Optional[Tuple[Optional[ScaleType], float]]
+        stats_detection: Optional[Tuple[Optional[ScaleType], float]],
     ) -> Tuple[ScaleType, float]:
         """
         Combine name-based and statistics-based detections.

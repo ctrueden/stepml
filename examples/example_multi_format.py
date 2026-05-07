@@ -4,11 +4,16 @@ Example script demonstrating multi-format support in Phase 3.
 Shows how to use the universal parser to process .sm, .ssc, and .dwi files
 with automatic format detection.
 """
-import os
 
-from stepml.parsers.universal_parser import parse_chart_file, detect_format, is_supported_format
-from stepml.features.feature_extractor import FeatureExtractor
+from pathlib import Path
+
 from stepml.config import get_songs_dir
+from stepml.features.feature_extractor import FeatureExtractor
+from stepml.parsers.universal_parser import (
+    detect_format,
+    is_supported_format,
+    parse_chart_file,
+)
 
 
 def example_1_basic_parsing():
@@ -56,7 +61,7 @@ def example_2_format_checking():
         "chart.dwi",
         "song.mp3",
         "image.png",
-        "data.json"
+        "data.json",
     ]
 
     for filename in test_files:
@@ -77,7 +82,7 @@ def example_3_batch_processing():
 
     # Find all supported chart files
     chart_files = []
-    for ext in ['.sm', '.ssc', '.dwi']:
+    for ext in [".sm", ".ssc", ".dwi"]:
         chart_files.extend(songs_dir.rglob(f"*{ext}"))
 
     print(f"Found {len(chart_files)} chart files:")
@@ -103,7 +108,9 @@ def example_3_batch_processing():
         chart = parse_chart_file(str(filepath))
         print(f"{chart.title} ({chart.format})")
         print(f"  Songpack: {chart.songpack}")
-        print(f"  Scale: {chart.detected_scale.value} ({chart.scale_confidence:.0%} confidence)")
+        print(
+            f"  Scale: {chart.detected_scale.value} ({chart.scale_confidence:.0%} confidence)"
+        )
         print(f"  Charts: {len(chart.charts)}")
         print()
 
@@ -137,7 +144,9 @@ def example_4_feature_extraction():
         hardest_chart = max(chart_data.charts, key=lambda c: c.rating)
         features = extractor.extract_features(chart_data, hardest_chart)
 
-        print(f"Chart: {hardest_chart.difficulty.value} (Rating {hardest_chart.rating})")
+        print(
+            f"Chart: {hardest_chart.difficulty.value} (Rating {hardest_chart.rating})"
+        )
         print(f"  NPS: {features.notes_per_second:.2f}")
         print(f"  Peak Density: {features.peak_density:.2f}")
         print(f"  Total Notes: {features.total_notes}")
@@ -175,25 +184,47 @@ def example_5_cross_format_comparison():
     print("-" * 40)
     print(f"{'Format':<20} {sm_chart.format:<15} {ssc_chart.format:<15}")
     print(f"{'Charts':<20} {len(sm_chart.charts):<15} {len(ssc_chart.charts):<15}")
-    print(f"{'BPM':<20} {sm_chart.bpms[0].value:<15.1f} {ssc_chart.bpms[0].value:<15.1f}")
-    print(f"{'Detected Scale':<20} {sm_chart.detected_scale.value:<15} {ssc_chart.detected_scale.value:<15}")
+    print(
+        f"{'BPM':<20} {sm_chart.bpms[0].value:<15.1f} {ssc_chart.bpms[0].value:<15.1f}"
+    )
+    print(
+        f"{'Detected Scale':<20} {sm_chart.detected_scale.value:<15} {ssc_chart.detected_scale.value:<15}"
+    )
     print()
 
     print("Chart Comparison:")
     print("-" * 40)
-    sm_challenge = next((c for c in sm_chart.charts
-                        if c.chart_type.value == "dance-single" and c.rating == 10), None)
-    ssc_challenge = next((c for c in ssc_chart.charts
-                         if c.chart_type.value == "dance-single" and c.rating == 10), None)
+    sm_challenge = next(
+        (
+            c
+            for c in sm_chart.charts
+            if c.chart_type.value == "dance-single" and c.rating == 10
+        ),
+        None,
+    )
+    ssc_challenge = next(
+        (
+            c
+            for c in ssc_chart.charts
+            if c.chart_type.value == "dance-single" and c.rating == 10
+        ),
+        None,
+    )
 
     if not sm_challenge or not ssc_challenge:
         print("Challenge charts not found, skipping comparison.")
         print()
         return
 
-    print(f"Challenge Chart (SM):  {sm_challenge.total_notes} notes, Rating {sm_challenge.rating}")
-    print(f"Challenge Chart (SSC): {ssc_challenge.total_notes} notes, Rating {ssc_challenge.rating}")
-    print(f"Match: {'✓' if sm_challenge.total_notes == ssc_challenge.total_notes else '✗'}")
+    print(
+        f"Challenge Chart (SM):  {sm_challenge.total_notes} notes, Rating {sm_challenge.rating}"
+    )
+    print(
+        f"Challenge Chart (SSC): {ssc_challenge.total_notes} notes, Rating {ssc_challenge.rating}"
+    )
+    print(
+        f"Match: {'✓' if sm_challenge.total_notes == ssc_challenge.total_notes else '✗'}"
+    )
     print()
 
 
@@ -227,9 +258,11 @@ def example_6_unified_workflow():
             key = f"{chart.chart_type.value}_{chart.difficulty.value}"
             normalized = chart_data.normalized_ratings.get(key, 0.0)
 
-            print(f"  - {chart.difficulty.value}: "
-                  f"Rating {chart.rating} → {normalized:.1f}, "
-                  f"NPS {features.notes_per_second:.2f}")
+            print(
+                f"  - {chart.difficulty.value}: "
+                f"Rating {chart.rating} → {normalized:.1f}, "
+                f"NPS {features.notes_per_second:.2f}"
+            )
         print()
 
     # Process files of different formats with same workflow

@@ -4,7 +4,9 @@ Rating normalization across different StepMania scale types.
 Converts ratings between Classic DDR, Modern DDR, and ITG scales
 to a unified rating system for consistent ML training and comparison.
 """
+
 from typing import Dict, Optional
+
 from stepml.utils.data_structures import ScaleType
 
 
@@ -22,17 +24,17 @@ class RatingNormalizer:
     # Based on observed difficulty equivalencies and rating creep adjustments
 
     CLASSIC_DDR_TO_UNIFIED = {
-        1: 1.0,    # Beginner levels map 1:1 at low end
+        1: 1.0,  # Beginner levels map 1:1 at low end
         2: 3.0,
         3: 5.0,
         4: 7.0,
         5: 9.0,
         6: 10.0,
-        7: 10.5,   # Classic 7 ≈ Modern 10-11
-        8: 12.0,   # Classic 8 ≈ Modern 12
-        9: 13.0,   # Classic 9 ≈ Modern 13
+        7: 10.5,  # Classic 7 ≈ Modern 10-11
+        8: 12.0,  # Classic 8 ≈ Modern 12
+        9: 13.0,  # Classic 9 ≈ Modern 13
         10: 14.5,  # Classic 10 baseline (refined using metrics)
-                   # Easy 10s (SAKURA): ~13, Hard 10s (PSMO): ~16
+        # Easy 10s (SAKURA): ~13, Hard 10s (PSMO): ~16
         11: 16.0,  # Extended classic scale - extremely difficult
         12: 17.5,  # Extended classic scale - beyond classic 10 flashing territory
     }
@@ -43,32 +45,24 @@ class RatingNormalizer:
         3: 5.0,
         4: 7.0,
         5: 9.0,
-        6: 10.0,   # ITG 6 ≈ Modern 10
-        7: 11.0,   # ITG 7 ≈ Modern 11
-        8: 12.5,   # ITG 8 ≈ Modern 12-13 (reduced from 14.0)
-        9: 14.0,   # ITG 9 ≈ Modern 14 (reduced from 15.0)
+        6: 10.0,  # ITG 6 ≈ Modern 10
+        7: 11.0,  # ITG 7 ≈ Modern 11
+        8: 12.5,  # ITG 8 ≈ Modern 12-13 (reduced from 14.0)
+        9: 14.0,  # ITG 9 ≈ Modern 14 (reduced from 15.0)
         10: 15.5,  # ITG 10 ≈ Modern 15-16 (reduced from 16.5)
         11: 17.0,  # ITG 11 ≈ Modern 17 (reduced from 18.0)
         12: 18.5,  # ITG 12 ≈ Modern 18-19 (reduced from 19.0)
     }
 
     # Modern DDR maps directly (it's our reference scale)
-    MODERN_DDR_TO_UNIFIED = {
-        i: float(i) for i in range(1, 21)
-    }
+    MODERN_DDR_TO_UNIFIED = {i: float(i) for i in range(1, 21)}
 
     # Reverse mappings for denormalization (if needed)
-    UNIFIED_TO_CLASSIC_DDR = {
-        v: k for k, v in CLASSIC_DDR_TO_UNIFIED.items()
-    }
+    UNIFIED_TO_CLASSIC_DDR = {v: k for k, v in CLASSIC_DDR_TO_UNIFIED.items()}
 
-    UNIFIED_TO_ITG = {
-        v: k for k, v in ITG_TO_UNIFIED.items()
-    }
+    UNIFIED_TO_ITG = {v: k for k, v in ITG_TO_UNIFIED.items()}
 
-    UNIFIED_TO_MODERN_DDR = {
-        v: k for k, v in MODERN_DDR_TO_UNIFIED.items()
-    }
+    UNIFIED_TO_MODERN_DDR = {v: k for k, v in MODERN_DDR_TO_UNIFIED.items()}
 
     def __init__(self, target_scale: ScaleType = ScaleType.MODERN_DDR):
         """
@@ -92,7 +86,7 @@ class RatingNormalizer:
         source_scale: ScaleType,
         interpolate: bool = True,
         notes_per_second: Optional[float] = None,
-        total_notes: Optional[int] = None
+        total_notes: Optional[int] = None,
     ) -> float:
         """
         Normalize a rating from a source scale to the target scale.
@@ -120,7 +114,11 @@ class RatingNormalizer:
         unified_rating = None
 
         # Special refinement for Classic DDR 10s using metrics
-        if source_scale == ScaleType.CLASSIC_DDR and rating == 10 and notes_per_second is not None:
+        if (
+            source_scale == ScaleType.CLASSIC_DDR
+            and rating == 10
+            and notes_per_second is not None
+        ):
             unified_rating = self._refine_classic_10(notes_per_second, total_notes)
         # Direct lookup if rating exists in table
         elif rating in conversion_table:
@@ -141,9 +139,7 @@ class RatingNormalizer:
             return float(self.denormalize(unified_rating, self.target_scale))
 
     def _refine_classic_10(
-        self,
-        notes_per_second: float,
-        total_notes: Optional[int] = None
+        self, notes_per_second: float, total_notes: Optional[int] = None
     ) -> float:
         """
         Refine Classic DDR 10 ratings using chart metrics.
@@ -185,9 +181,7 @@ class RatingNormalizer:
             return 13.0
 
     def _interpolate_rating(
-        self,
-        rating: int,
-        conversion_table: Dict[int, float]
+        self, rating: int, conversion_table: Dict[int, float]
     ) -> float:
         """
         Interpolate a rating between known conversion points.
@@ -215,7 +209,9 @@ class RatingNormalizer:
             # Rating below minimum, extrapolate from first two points
             keys = sorted(conversion_table.keys())[:2]
             if len(keys) >= 2:
-                slope = (conversion_table[keys[1]] - conversion_table[keys[0]]) / (keys[1] - keys[0])
+                slope = (conversion_table[keys[1]] - conversion_table[keys[0]]) / (
+                    keys[1] - keys[0]
+                )
                 return conversion_table[keys[0]] - slope * (keys[0] - rating)
             else:
                 return float(rating)
@@ -224,7 +220,9 @@ class RatingNormalizer:
             # Rating above maximum, extrapolate from last two points
             keys = sorted(conversion_table.keys())[-2:]
             if len(keys) >= 2:
-                slope = (conversion_table[keys[1]] - conversion_table[keys[0]]) / (keys[1] - keys[0])
+                slope = (conversion_table[keys[1]] - conversion_table[keys[0]]) / (
+                    keys[1] - keys[0]
+                )
                 return conversion_table[keys[1]] + slope * (rating - keys[1])
             else:
                 return float(rating)
@@ -236,11 +234,7 @@ class RatingNormalizer:
         progress = (rating - lower_bound) / (upper_bound - lower_bound)
         return lower_unified + progress * (upper_unified - lower_unified)
 
-    def denormalize(
-        self,
-        unified_rating: float,
-        target_scale: ScaleType
-    ) -> int:
+    def denormalize(self, unified_rating: float, target_scale: ScaleType) -> int:
         """
         Convert a unified rating back to a target scale (for display purposes).
 
@@ -267,7 +261,9 @@ class RatingNormalizer:
         reverse_table = reverse_tables[target_scale]
 
         # Find closest match
-        closest_unified = min(reverse_table.keys(), key=lambda x: abs(x - unified_rating))
+        closest_unified = min(
+            reverse_table.keys(), key=lambda x: abs(x - unified_rating)
+        )
 
         # If very close, use exact mapping
         if abs(closest_unified - unified_rating) < 0.5:
@@ -292,14 +288,14 @@ class RatingNormalizer:
 
         # Linear interpolation
         progress = (unified_rating - lower) / (upper - lower)
-        denormalized = reverse_table[lower] + progress * (reverse_table[upper] - reverse_table[lower])
+        denormalized = reverse_table[lower] + progress * (
+            reverse_table[upper] - reverse_table[lower]
+        )
 
         return round(denormalized)
 
     def batch_normalize(
-        self,
-        ratings: Dict[str, int],
-        source_scale: ScaleType
+        self, ratings: Dict[str, int], source_scale: ScaleType
     ) -> Dict[str, float]:
         """
         Normalize a batch of ratings (e.g., all difficulties in a song).
@@ -351,7 +347,9 @@ class RatingNormalizer:
             "original_rating": rating,
             "source_scale": source_scale.value,
             "normalized_rating": normalized,
-            "classic_ddr_equivalent": self.denormalize(normalized, ScaleType.CLASSIC_DDR),
+            "classic_ddr_equivalent": self.denormalize(
+                normalized, ScaleType.CLASSIC_DDR
+            ),
             "modern_ddr_equivalent": self.denormalize(normalized, ScaleType.MODERN_DDR),
             "itg_equivalent": self.denormalize(normalized, ScaleType.ITG),
         }

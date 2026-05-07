@@ -1,13 +1,14 @@
 """
 Universal parser that auto-detects file format and uses appropriate parser.
 """
+
 from pathlib import Path
 from typing import Union
 
-from stepml.utils.data_structures import ChartData
+from stepml.parsers.dwi_parser import parse_dwi_file
 from stepml.parsers.sm_parser import parse_sm_file
 from stepml.parsers.ssc_parser import parse_ssc_file
-from stepml.parsers.dwi_parser import parse_dwi_file
+from stepml.utils.data_structures import ChartData, ScaleType
 
 
 class UniversalParser:
@@ -21,16 +22,18 @@ class UniversalParser:
     """
 
     SUPPORTED_FORMATS = {
-        '.sm': 'StepMania',
-        '.ssc': 'StepMania 5',
-        '.dwi': 'DanceWith Intensity',
+        ".sm": "StepMania",
+        ".ssc": "StepMania 5",
+        ".dwi": "DanceWith Intensity",
     }
 
     def __init__(self):
         """Initialize the universal parser."""
         pass
 
-    def parse_file(self, filepath: Union[str, Path], target_scale: 'ScaleType' = None) -> ChartData:
+    def parse_file(
+        self, filepath: Union[str, Path], target_scale: ScaleType = None
+    ) -> ChartData:
         """
         Parse a chart file and return ChartData.
 
@@ -48,7 +51,6 @@ class UniversalParser:
             FileNotFoundError: If file doesn't exist
             ValueError: If file format is not supported
         """
-        from stepml.utils.data_structures import ScaleType
         if target_scale is None:
             target_scale = ScaleType.MODERN_DDR
 
@@ -61,11 +63,11 @@ class UniversalParser:
         ext = filepath.suffix.lower()
 
         # Route to appropriate parser
-        if ext == '.sm':
+        if ext == ".sm":
             return parse_sm_file(str(filepath), target_scale)
-        elif ext == '.ssc':
+        elif ext == ".ssc":
             return parse_ssc_file(str(filepath), target_scale)
-        elif ext == '.dwi':
+        elif ext == ".dwi":
             return parse_dwi_file(str(filepath), target_scale)
         else:
             raise ValueError(
@@ -101,7 +103,9 @@ class UniversalParser:
         return self.SUPPORTED_FORMATS.get(ext, "Unknown")
 
 
-def parse_chart_file(filepath: Union[str, Path], target_scale: 'ScaleType' = None) -> ChartData:
+def parse_chart_file(
+    filepath: Union[str, Path], target_scale: ScaleType = None
+) -> ChartData:
     """
     Convenience function to parse any supported chart file.
 
@@ -123,7 +127,6 @@ def parse_chart_file(filepath: Union[str, Path], target_scale: 'ScaleType' = Non
         >>> print(f"Format: {chart.format}")
         >>> print(f"Charts: {len(chart.charts)}")
     """
-    from stepml.utils.data_structures import ScaleType
     if target_scale is None:
         target_scale = ScaleType.MODERN_DDR
     parser = UniversalParser()

@@ -1,12 +1,19 @@
 """
 Tests for scale detection and rating normalization.
 """
+
 import pytest
 
-from stepml.utils.scale_detector import ScaleDetector
-from stepml.utils.rating_normalizer import RatingNormalizer
-from stepml.utils.data_structures import ScaleType, NoteData, DifficultyType, ChartType, ChartData
 from stepml.config import get_songs_dir
+from stepml.utils.data_structures import (
+    ChartData,
+    ChartType,
+    DifficultyType,
+    NoteData,
+    ScaleType,
+)
+from stepml.utils.rating_normalizer import RatingNormalizer
+from stepml.utils.scale_detector import ScaleDetector
 
 
 class TestScaleDetector:
@@ -32,7 +39,9 @@ class TestScaleDetector:
         ]
 
         for pack_name in test_cases:
-            scale, confidence = detector.detect_scale(f"/Songs/{pack_name}/Song/file.sm")
+            scale, confidence = detector.detect_scale(
+                f"/Songs/{pack_name}/Song/file.sm"
+            )
             assert scale == ScaleType.CLASSIC_DDR, f"Failed for {pack_name}"
             assert confidence > 0.8, f"Low confidence for {pack_name}: {confidence}"
 
@@ -51,7 +60,9 @@ class TestScaleDetector:
         ]
 
         for pack_name in test_cases:
-            scale, confidence = detector.detect_scale(f"/Songs/{pack_name}/Song/file.sm")
+            scale, confidence = detector.detect_scale(
+                f"/Songs/{pack_name}/Song/file.sm"
+            )
             assert scale == ScaleType.MODERN_DDR, f"Failed for {pack_name}"
             assert confidence > 0.8, f"Low confidence for {pack_name}: {confidence}"
 
@@ -70,7 +81,9 @@ class TestScaleDetector:
         ]
 
         for pack_name in test_cases:
-            scale, confidence = detector.detect_scale(f"/Songs/{pack_name}/Song/file.sm")
+            scale, confidence = detector.detect_scale(
+                f"/Songs/{pack_name}/Song/file.sm"
+            )
             assert scale == ScaleType.ITG, f"Failed for {pack_name}"
             assert confidence > 0.7, f"Low confidence for {pack_name}: {confidence}"
 
@@ -83,8 +96,12 @@ class TestScaleDetector:
         ]
 
         for pack_name in test_cases:
-            scale, confidence = detector.detect_scale(f"/Songs/{pack_name}/Song/file.sm")
-            assert scale == ScaleType.UNKNOWN or confidence < 0.5, f"Unexpected detection for {pack_name}"
+            scale, confidence = detector.detect_scale(
+                f"/Songs/{pack_name}/Song/file.sm"
+            )
+            assert scale == ScaleType.UNKNOWN or confidence < 0.5, (
+                f"Unexpected detection for {pack_name}"
+            )
 
     def test_detection_with_statistics(self, detector):
         """Test statistical detection from chart ratings."""
@@ -100,9 +117,11 @@ class TestScaleDetector:
             filepath="/Songs/Unknown/Song/file.sm",
             format=".sm",
             songpack="Unknown",
-            charts=classic_charts
+            charts=classic_charts,
         )
-        scale, confidence = detector.detect_scale("/Songs/Unknown/Song/file.sm", chart_data)
+        scale, confidence = detector.detect_scale(
+            "/Songs/Unknown/Song/file.sm", chart_data
+        )
         # Without name match, should rely on statistics
         assert scale == ScaleType.CLASSIC_DDR or scale == ScaleType.UNKNOWN
 
@@ -118,9 +137,11 @@ class TestScaleDetector:
             filepath="/Songs/Unknown/Song/file.sm",
             format=".sm",
             songpack="Unknown",
-            charts=modern_charts
+            charts=modern_charts,
         )
-        scale, confidence = detector.detect_scale("/Songs/Unknown/Song/file.sm", chart_data)
+        scale, confidence = detector.detect_scale(
+            "/Songs/Unknown/Song/file.sm", chart_data
+        )
         assert scale == ScaleType.MODERN_DDR
 
     def test_get_scale_info(self, detector):
@@ -154,7 +175,9 @@ class TestRatingNormalizer:
 
         for original, expected in test_cases.items():
             normalized = normalizer.normalize(original, ScaleType.CLASSIC_DDR)
-            assert normalized == expected, f"Classic DDR {original} -> {normalized}, expected {expected}"
+            assert normalized == expected, (
+                f"Classic DDR {original} -> {normalized}, expected {expected}"
+            )
 
     def test_itg_normalization(self, normalizer):
         """Test normalization of ITG ratings (with rating creep)."""
@@ -169,13 +192,17 @@ class TestRatingNormalizer:
 
         for original, expected in test_cases.items():
             normalized = normalizer.normalize(original, ScaleType.ITG)
-            assert normalized == expected, f"ITG {original} -> {normalized}, expected {expected}"
+            assert normalized == expected, (
+                f"ITG {original} -> {normalized}, expected {expected}"
+            )
 
     def test_modern_ddr_normalization(self, normalizer):
         """Test normalization of Modern DDR ratings (identity mapping)."""
         for rating in range(1, 21):
             normalized = normalizer.normalize(rating, ScaleType.MODERN_DDR)
-            assert normalized == float(rating), f"Modern DDR {rating} should map to itself"
+            assert normalized == float(rating), (
+                f"Modern DDR {rating} should map to itself"
+            )
 
     def test_interpolation(self, normalizer):
         """Test interpolation for unmapped ratings."""
@@ -282,7 +309,9 @@ class TestRatingNormalizer:
         # Classic DDR identity (should map to itself)
         for rating in [1, 5, 7, 8, 9, 10]:
             normalized = normalizer_classic.normalize(rating, ScaleType.CLASSIC_DDR)
-            assert normalized == float(rating), f"Classic {rating} → Classic should be identity"
+            assert normalized == float(rating), (
+                f"Classic {rating} → Classic should be identity"
+            )
 
     def test_configurable_target_scale_modern_ddr(self):
         """Test that default Modern DDR target scale still works correctly."""
@@ -317,8 +346,9 @@ class TestRatingNormalizer:
 
         # Verify round-trip consistency (Classic → Modern → ITG → Modern → Classic)
         normalizer_modern = RatingNormalizer(target_scale=ScaleType.MODERN_DDR)
-        classic_8_to_modern = normalizer_modern.normalize(8, ScaleType.CLASSIC_DDR)  # 12.0
-        modern_12_to_itg = normalizer_itg.normalize(12, ScaleType.MODERN_DDR)  # 8.0
+        classic_8_to_modern = normalizer_modern.normalize(
+            8, ScaleType.CLASSIC_DDR
+        )  # 12.0
         itg_8_to_modern = normalizer_modern.normalize(8, ScaleType.ITG)  # 12.5
         # Should be close (within rounding)
         assert abs(classic_8_to_modern - itg_8_to_modern) <= 1.0
@@ -330,8 +360,12 @@ class TestRatingNormalizer:
         # Test Classic DDR interpolation to ITG
         # Classic 8.5 should interpolate between 8→12.0 and 9→13.0
         # Unified: 12.5, then to ITG should be ~8
-        normalized = normalizer_itg.normalize(8.5, ScaleType.CLASSIC_DDR, interpolate=True)
-        assert 8.0 <= normalized <= 9.0, f"Interpolated value {normalized} out of expected range"
+        normalized = normalizer_itg.normalize(
+            8.5, ScaleType.CLASSIC_DDR, interpolate=True
+        )
+        assert 8.0 <= normalized <= 9.0, (
+            f"Interpolated value {normalized} out of expected range"
+        )
 
 
 @pytest.mark.integration

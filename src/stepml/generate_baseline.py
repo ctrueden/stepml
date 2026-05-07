@@ -9,14 +9,13 @@ This script:
 Run this script when you intentionally change feature extraction algorithms
 and want to update the regression baseline.
 """
-import json
-import sys
-from datetime import datetime
-from pathlib import Path
 
+import json
+from datetime import datetime
+
+from stepml.features.feature_extractor import AdvancedFeatureExtractor, FeatureExtractor
 from stepml.parsers.sm_parser import parse_sm_file
-from stepml.features.feature_extractor import FeatureExtractor, AdvancedFeatureExtractor
-from stepml.utils import get_stepml_root, get_fixtures_dir
+from stepml.utils import get_fixtures_dir, get_stepml_root
 
 
 def generate_baseline():
@@ -29,7 +28,7 @@ def generate_baseline():
 
     # Load test charts config
     print(f"Loading test charts from: {test_charts_path}")
-    with open(test_charts_path, 'r') as f:
+    with open(test_charts_path, "r") as f:
         test_config = json.load(f)
 
     # Initialize extractors
@@ -42,13 +41,13 @@ def generate_baseline():
         "_generated": datetime.now().isoformat(),
         "_version": "1.0.0",
         "_instructions": "Do not edit manually. Regenerate with: uv run python scripts/generate_baseline.py",
-        "baseline_data": {}
+        "baseline_data": {},
     }
 
     # Process each test chart
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("GENERATING BASELINE FEATURE EXTRACTIONS")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
     charts_processed = 0
     charts_skipped = 0
@@ -61,7 +60,7 @@ def generate_baseline():
         print(f"  Path: {chart_path}")
 
         if not chart_path.exists():
-            print(f"  ⚠️  SKIPPED - File not found")
+            print("  ⚠️  SKIPPED - File not found")
             charts_skipped += 1
             continue
 
@@ -79,14 +78,16 @@ def generate_baseline():
                     "artist": chart_data.artist,
                     "format": chart_data.format,
                 },
-                "charts": {}
+                "charts": {},
             }
 
             # Extract features for each difficulty
             for chart in chart_data.charts:
                 chart_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
 
-                print(f"  - {chart.chart_type.value} {chart.difficulty.value} (Rating: {chart.rating})")
+                print(
+                    f"  - {chart.chart_type.value} {chart.difficulty.value} (Rating: {chart.rating})"
+                )
 
                 # Extract basic features
                 features = extractor.extract_features(chart_data, chart)
@@ -98,7 +99,7 @@ def generate_baseline():
                 # Store in baseline
                 chart_baseline["charts"][chart_key] = {
                     **feature_dict,
-                    "advanced_features": advanced_features
+                    "advanced_features": advanced_features,
                 }
 
             baseline_data["baseline_data"][chart_name] = chart_baseline
@@ -113,13 +114,13 @@ def generate_baseline():
         print()
 
     # Save baseline
-    print("="*80)
+    print("=" * 80)
     print(f"Saving baseline to: {baseline_path}")
 
-    with open(baseline_path, 'w') as f:
+    with open(baseline_path, "w") as f:
         json.dump(baseline_data, f, indent=2)
 
-    print(f"\n✓ Baseline generation complete!")
+    print("\n✓ Baseline generation complete!")
     print(f"  Charts processed: {charts_processed}")
     print(f"  Charts skipped: {charts_skipped}")
     print(f"  Total charts in baseline: {charts_processed}")
@@ -128,7 +129,7 @@ def generate_baseline():
     print("  uv run pytest -v")
     print("\nOr run specific test:")
     print("  uv run pytest -v -m regression")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
 
 if __name__ == "__main__":

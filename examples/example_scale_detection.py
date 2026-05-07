@@ -4,13 +4,12 @@ Example usage of Phase 2: Scale Detection and Rating Normalization
 Demonstrates automatic scale detection and rating normalization across
 different StepMania song packs (Classic DDR, Modern DDR, ITG).
 """
-import os
 
-from stepml.parsers.sm_parser import parse_sm_file
-from stepml.utils.scale_detector import ScaleDetector
-from stepml.utils.rating_normalizer import RatingNormalizer
-from stepml.utils.data_structures import ScaleType
 from stepml.config import get_songs_dir
+from stepml.parsers.sm_parser import parse_sm_file
+from stepml.utils.data_structures import ScaleType
+from stepml.utils.rating_normalizer import RatingNormalizer
+from stepml.utils.scale_detector import ScaleDetector
 
 
 def example_basic_usage():
@@ -36,7 +35,9 @@ def example_basic_usage():
         for chart in chart_data.charts[:5]:
             difficulty_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
             normalized = chart_data.normalized_ratings.get(difficulty_key, 0)
-            print(f"  {chart.difficulty.value:10s}: {chart.rating:2d} → {normalized:.1f}")
+            print(
+                f"  {chart.difficulty.value:10s}: {chart.rating:2d} → {normalized:.1f}"
+            )
     else:
         print(f"⚠ Chart file not found: {chart_path}")
     print()
@@ -50,7 +51,6 @@ def example_manual_detection():
     print()
 
     detector = ScaleDetector()
-    normalizer = RatingNormalizer()
 
     # Test different pack names
     test_packs = [
@@ -169,22 +169,26 @@ def example_batch_processing():
             difficulty_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
             normalized = chart_data.normalized_ratings.get(difficulty_key, 0)
 
-            all_charts.append({
-                "pack": pack,
-                "song": chart_data.title,
-                "difficulty": chart.difficulty.value,
-                "original_rating": chart.rating,
-                "scale": chart_data.detected_scale.value,
-                "normalized_rating": normalized,
-            })
+            all_charts.append(
+                {
+                    "pack": pack,
+                    "song": chart_data.title,
+                    "difficulty": chart.difficulty.value,
+                    "original_rating": chart.rating,
+                    "scale": chart_data.detected_scale.value,
+                    "normalized_rating": normalized,
+                }
+            )
 
     # Show distribution
     if all_charts:
         print("Sample of normalized ratings:")
         print()
         for c in all_charts[:10]:
-            print(f"{c['pack']:15s} | {c['song']:20s} | "
-                  f"{c['difficulty']:10s} | {c['original_rating']:2d} → {c['normalized_rating']:5.1f}")
+            print(
+                f"{c['pack']:15s} | {c['song']:20s} | "
+                f"{c['difficulty']:10s} | {c['original_rating']:2d} → {c['normalized_rating']:5.1f}"
+            )
 
 
 if __name__ == "__main__":

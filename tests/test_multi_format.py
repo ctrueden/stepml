@@ -3,20 +3,22 @@ Comprehensive tests for multi-format parser support (Phase 3).
 
 Tests .sm, .ssc, and .dwi parsers along with universal parser.
 """
+
+from pathlib import Path
+
 import pytest
 
+from stepml.config import get_songs_dir
+from stepml.parsers.dwi_parser import parse_dwi_file
 from stepml.parsers.sm_parser import parse_sm_file
 from stepml.parsers.ssc_parser import parse_ssc_file
-from stepml.parsers.dwi_parser import parse_dwi_file
 from stepml.parsers.universal_parser import (
-    parse_chart_file,
+    UniversalParser,
     detect_format,
     is_supported_format,
-    UniversalParser
+    parse_chart_file,
 )
 from stepml.utils.data_structures import ChartType, DifficultyType
-from stepml.config import get_songs_dir
-
 
 # Test file paths
 SONGS_DIR = get_songs_dir()
@@ -74,8 +76,9 @@ class TestSSCParser:
         chart_data = parse_ssc_file(str(SSC_FILE))
 
         # Find a chart with notes
-        chart = next(c for c in chart_data.charts
-                    if c.difficulty == DifficultyType.CHALLENGE)
+        chart = next(
+            c for c in chart_data.charts if c.difficulty == DifficultyType.CHALLENGE
+        )
 
         assert chart.total_notes > 0
         assert chart.tap_notes > 0
@@ -145,7 +148,7 @@ class TestDWIParser:
         # Check note format is 4-column (LDUR)
         for beat, notes in chart.note_positions[:5]:
             assert len(notes) == 4
-            assert all(c in '01' for c in notes)
+            assert all(c in "01" for c in notes)
 
     def test_dwi_jump_detection(self):
         """Test jump detection in decoded notes."""
@@ -216,6 +219,7 @@ class TestUniversalParser:
 
         # Create a temp file with unsupported extension
         import tempfile
+
         with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
             temp_path = f.name
 
@@ -259,10 +263,12 @@ class TestFormatEquivalence:
         ssc_data = parse_ssc_file(str(SSC_FILE))
 
         # Sort charts by type and difficulty for comparison
-        sm_charts = sorted(sm_data.charts,
-                          key=lambda c: (c.chart_type.value, c.difficulty.value))
-        ssc_charts = sorted(ssc_data.charts,
-                           key=lambda c: (c.chart_type.value, c.difficulty.value))
+        sm_charts = sorted(
+            sm_data.charts, key=lambda c: (c.chart_type.value, c.difficulty.value)
+        )
+        ssc_charts = sorted(
+            ssc_data.charts, key=lambda c: (c.chart_type.value, c.difficulty.value)
+        )
 
         for sm_chart, ssc_chart in zip(sm_charts, ssc_charts):
             assert sm_chart.chart_type == ssc_chart.chart_type

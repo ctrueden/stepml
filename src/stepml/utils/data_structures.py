@@ -1,21 +1,24 @@
 """
 Data structures for StepMania chart analysis.
 """
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Dict, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 class ScaleType(Enum):
     """Rating scale types across different game series."""
-    CLASSIC_DDR = "classic_ddr"      # DDR 1st-Extreme (1-10 scale)
-    MODERN_DDR = "modern_ddr"        # DDR X onwards (1-20 scale)
-    ITG = "itg"                      # In The Groove (1-12 scale)
-    UNKNOWN = "unknown"              # Unable to determine
+
+    CLASSIC_DDR = "classic_ddr"  # DDR 1st-Extreme (1-10 scale)
+    MODERN_DDR = "modern_ddr"  # DDR X onwards (1-20 scale)
+    ITG = "itg"  # In The Groove (1-12 scale)
+    UNKNOWN = "unknown"  # Unable to determine
 
 
 class DifficultyType(Enum):
     """Standard difficulty types."""
+
     BEGINNER = "Beginner"
     EASY = "Easy"
     MEDIUM = "Medium"
@@ -26,6 +29,7 @@ class DifficultyType(Enum):
 
 class ChartType(Enum):
     """Chart play styles."""
+
     SINGLE = "dance-single"
     DOUBLE = "dance-double"
     COUPLE = "dance-couple"
@@ -35,6 +39,7 @@ class ChartType(Enum):
 @dataclass
 class TimingEvent:
     """Represents a timing change in the chart."""
+
     beat: float
     value: float  # BPM for BPM changes, duration for stops
 
@@ -42,6 +47,7 @@ class TimingEvent:
 @dataclass
 class NoteData:
     """Parsed note data for a single chart."""
+
     chart_type: ChartType
     difficulty: DifficultyType
     rating: int
@@ -56,12 +62,15 @@ class NoteData:
     jump_count: int = 0
 
     # Timing information
-    note_positions: List[Tuple[float, str]] = field(default_factory=list)  # (beat, note_pattern)
+    note_positions: List[Tuple[float, str]] = field(
+        default_factory=list
+    )  # (beat, note_pattern)
 
 
 @dataclass
 class ChartData:
     """Complete chart data with metadata and features."""
+
     # File metadata
     filepath: str
     format: str  # '.sm', '.ssc', '.dwi'
@@ -95,12 +104,16 @@ class ChartData:
     # Scale detection
     detected_scale: ScaleType = ScaleType.UNKNOWN
     scale_confidence: float = 0.0
-    normalized_ratings: Dict[str, float] = field(default_factory=dict)  # difficulty -> normalized rating
+    normalized_ratings: Dict[str, float] = field(
+        default_factory=dict
+    )  # difficulty -> normalized rating
 
     # Extracted features (populated during feature extraction)
     features: Dict[str, float] = field(default_factory=dict)
 
-    def get_chart(self, chart_type: ChartType, difficulty: DifficultyType) -> Optional[NoteData]:
+    def get_chart(
+        self, chart_type: ChartType, difficulty: DifficultyType
+    ) -> Optional[NoteData]:
         """Get a specific chart by type and difficulty."""
         for chart in self.charts:
             if chart.chart_type == chart_type and chart.difficulty == difficulty:

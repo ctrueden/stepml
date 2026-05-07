@@ -1,16 +1,21 @@
 """
 Parser for legacy DanceWith Intensity .dwi files.
 """
+
 import re
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List
 
 from stepml.utils.data_structures import (
-    ChartData, NoteData, TimingEvent, ChartType,
-    DifficultyType, ScaleType
+    ChartData,
+    ChartType,
+    DifficultyType,
+    NoteData,
+    ScaleType,
+    TimingEvent,
 )
-from stepml.utils.scale_detector import ScaleDetector
 from stepml.utils.rating_normalizer import RatingNormalizer
+from stepml.utils.scale_detector import ScaleDetector
 
 
 class DWIParser:
@@ -63,17 +68,18 @@ class DWIParser:
             raise FileNotFoundError(f"File not found: {filepath}")
 
         # Read file content, stripping // comment lines (DWI convention)
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            content = '\n'.join(
-                line for line in f.read().splitlines()
-                if not line.lstrip().startswith('//')
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            content = "\n".join(
+                line
+                for line in f.read().splitlines()
+                if not line.lstrip().startswith("//")
             )
 
         # Create ChartData object
         chart_data = ChartData(
             filepath=str(filepath),
             format=filepath.suffix,
-            songpack=filepath.parent.parent.name  # Assuming Songs/PackName/Song/file.dwi
+            songpack=filepath.parent.parent.name,  # Assuming Songs/PackName/Song/file.dwi
         )
 
         # Parse all tags
@@ -88,9 +94,10 @@ class DWIParser:
 
     def _parse_metadata(self, content: str, chart_data: ChartData):
         """Extract metadata tags from .dwi file."""
+
         # Simple tag parser - handles #TAG:value;
         def get_tag_value(tag_name: str) -> str:
-            pattern = rf'#\s*{tag_name}\s*:\s*([^;]*);'
+            pattern = rf"#\s*{tag_name}\s*:\s*([^;]*);"
             match = re.search(pattern, content, re.IGNORECASE | re.MULTILINE)
             if match:
                 return match.group(1).strip()
@@ -132,7 +139,7 @@ class DWIParser:
         """
         # Parse BPM (single value)
         # Semicolon is optional — some DWI files omit it (e.g. #BPM:190.42 with no ;)
-        bpm_pattern = r'#\s*BPM\s*:\s*([^\s;]+)'
+        bpm_pattern = r"#\s*BPM\s*:\s*([^\s;]+)"
         bpm_match = re.search(bpm_pattern, content, re.IGNORECASE)
         if bpm_match:
             try:
@@ -150,9 +157,11 @@ class DWIParser:
                     #DOUBLE:DIFFICULTY:RATING:LEFT_NOTES:RIGHT_NOTES;
         """
         # Pattern to match SINGLE/DOUBLE chart definitions
-        chart_pattern = r'#(SINGLE|DOUBLE)\s*:\s*([^:]+)\s*:\s*(\d+)\s*:\s*([^;]+);'
+        chart_pattern = r"#(SINGLE|DOUBLE)\s*:\s*([^:]+)\s*:\s*(\d+)\s*:\s*([^;]+);"
 
-        matches = re.finditer(chart_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
+        matches = re.finditer(
+            chart_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL
+        )
 
         for match in matches:
             chart_type_str = match.group(1).strip().lower()
@@ -161,7 +170,9 @@ class DWIParser:
             notes_data = match.group(4).strip()
 
             # Map to our enums
-            chart_type = ChartType.SINGLE if chart_type_str == "single" else ChartType.DOUBLE
+            chart_type = (
+                ChartType.SINGLE if chart_type_str == "single" else ChartType.DOUBLE
+            )
             difficulty = self.DIFFICULTY_MAP.get(difficulty_str)
 
             if difficulty is None:
@@ -189,7 +200,7 @@ class DWIParser:
                 chart_type=chart_type,
                 difficulty=difficulty,
                 rating=rating,
-                raw_notes=notes_data
+                raw_notes=notes_data,
             )
 
             # Parse the note data (DWI compressed format)
@@ -199,7 +210,9 @@ class DWIParser:
 
             chart_data.charts.append(note_data)
 
-    def _parse_dwi_note_data(self, notes_str: str, note_data: NoteData, bpm: float, chart_type: ChartType):
+    def _parse_dwi_note_data(
+        self, notes_str: str, note_data: NoteData, bpm: float, chart_type: ChartType
+    ):
         """
         Parse DWI compressed note data format.
 
@@ -239,27 +252,37 @@ class DWIParser:
         # some DWI files) and '!' hold/freeze markers before parsing.
         # '!' precedes a note to indicate it starts a hold; we treat the
         # following note normally since hold tracking is not yet implemented.
-        notes_str = ''.join(notes_str.split())  # remove all whitespace
-        notes_str = notes_str.replace('!', '')   # drop hold markers
+        notes_str = "".join(notes_str.split())  # remove all whitespace
+        notes_str = notes_str.replace("!", "")  # drop hold markers
 
         # For DOUBLE charts, split into left and right panel sections
-        if chart_type == ChartType.DOUBLE and ':' in notes_str:
-            left_notes, right_notes = notes_str.split(':', 1)
+        if chart_type == ChartType.DOUBLE and ":" in notes_str:
+            left_notes, right_notes = notes_str.split(":", 1)
             # Parse both sections and merge
-            self._parse_double_panels(left_notes, right_notes, note_data, beat_increment)
+            self._parse_double_panels(
+                left_notes, right_notes, note_data, beat_increment
+            )
         else:
             # SINGLE chart or DOUBLE chart without separator (old format)
             self._parse_single_panel(notes_str, note_data, beat_increment, chart_type)
 
         # Calculate total notes
-        note_data.total_notes = note_data.tap_notes + note_data.hold_notes + note_data.roll_notes
+        note_data.total_notes = (
+            note_data.tap_notes + note_data.hold_notes + note_data.roll_notes
+        )
 
-    def _parse_single_panel(self, notes_str: str, note_data: NoteData, beat_increment: float, chart_type: ChartType):
+    def _parse_single_panel(
+        self,
+        notes_str: str,
+        note_data: NoteData,
+        beat_increment: float,
+        chart_type: ChartType,
+    ):
         """Parse a single panel section (for SINGLE charts)."""
         current_beat = 0.0
 
         for char in notes_str.upper():
-            if char == '0':
+            if char == "0":
                 current_beat += beat_increment
                 continue
 
@@ -268,21 +291,21 @@ class DWIParser:
                 if char.isdigit():
                     value = int(char)
                 else:
-                    value = ord(char) - ord('A') + 10  # A=10, B=11, etc.
+                    value = ord(char) - ord("A") + 10  # A=10, B=11, etc.
 
                 if value < 0 or value > 15:
                     current_beat += beat_increment
                     continue
 
                 # Convert bitwise encoding to 4-column format
-                left = '1' if (value & 1) else '0'    # Bit 0
-                down = '1' if (value & 2) else '0'    # Bit 1
-                up = '1' if (value & 4) else '0'      # Bit 2
-                right = '1' if (value & 8) else '0'   # Bit 3
+                left = "1" if (value & 1) else "0"  # Bit 0
+                down = "1" if (value & 2) else "0"  # Bit 1
+                up = "1" if (value & 4) else "0"  # Bit 2
+                right = "1" if (value & 8) else "0"  # Bit 3
                 note_line = left + down + up + right
 
                 # Count note types
-                tap_count = note_line.count('1')
+                tap_count = note_line.count("1")
 
                 if tap_count > 0:
                     note_data.tap_notes += tap_count
@@ -300,15 +323,17 @@ class DWIParser:
                 current_beat += beat_increment
                 continue
 
-    def _parse_double_panels(self, left_str: str, right_str: str, note_data: NoteData, beat_increment: float):
+    def _parse_double_panels(
+        self, left_str: str, right_str: str, note_data: NoteData, beat_increment: float
+    ):
         """Parse DOUBLE chart with separate left and right panel sections."""
         # Parse left panel (columns 0-3)
         left_notes = []
         current_beat = 0.0
 
         for char in left_str.upper():
-            if char == '0':
-                left_notes.append((current_beat, '0000'))
+            if char == "0":
+                left_notes.append((current_beat, "0000"))
                 current_beat += beat_increment
                 continue
 
@@ -316,22 +341,22 @@ class DWIParser:
                 if char.isdigit():
                     value = int(char)
                 else:
-                    value = ord(char) - ord('A') + 10
+                    value = ord(char) - ord("A") + 10
 
                 if value < 0 or value > 15:
-                    left_notes.append((current_beat, '0000'))
+                    left_notes.append((current_beat, "0000"))
                     current_beat += beat_increment
                     continue
 
-                left = '1' if (value & 1) else '0'
-                down = '1' if (value & 2) else '0'
-                up = '1' if (value & 4) else '0'
-                right = '1' if (value & 8) else '0'
+                left = "1" if (value & 1) else "0"
+                down = "1" if (value & 2) else "0"
+                up = "1" if (value & 4) else "0"
+                right = "1" if (value & 8) else "0"
                 left_notes.append((current_beat, left + down + up + right))
                 current_beat += beat_increment
 
             except (ValueError, IndexError):
-                left_notes.append((current_beat, '0000'))
+                left_notes.append((current_beat, "0000"))
                 current_beat += beat_increment
                 continue
 
@@ -340,8 +365,8 @@ class DWIParser:
         current_beat = 0.0
 
         for char in right_str.upper():
-            if char == '0':
-                right_notes.append((current_beat, '0000'))
+            if char == "0":
+                right_notes.append((current_beat, "0000"))
                 current_beat += beat_increment
                 continue
 
@@ -349,22 +374,22 @@ class DWIParser:
                 if char.isdigit():
                     value = int(char)
                 else:
-                    value = ord(char) - ord('A') + 10
+                    value = ord(char) - ord("A") + 10
 
                 if value < 0 or value > 15:
-                    right_notes.append((current_beat, '0000'))
+                    right_notes.append((current_beat, "0000"))
                     current_beat += beat_increment
                     continue
 
-                left = '1' if (value & 1) else '0'
-                down = '1' if (value & 2) else '0'
-                up = '1' if (value & 4) else '0'
-                right = '1' if (value & 8) else '0'
+                left = "1" if (value & 1) else "0"
+                down = "1" if (value & 2) else "0"
+                up = "1" if (value & 4) else "0"
+                right = "1" if (value & 8) else "0"
                 right_notes.append((current_beat, left + down + up + right))
                 current_beat += beat_increment
 
             except (ValueError, IndexError):
-                right_notes.append((current_beat, '0000'))
+                right_notes.append((current_beat, "0000"))
                 current_beat += beat_increment
                 continue
 
@@ -373,23 +398,23 @@ class DWIParser:
         merged_notes = {}
 
         for beat, notes in left_notes:
-            if notes != '0000':
-                merged_notes[beat] = notes + '0000'
+            if notes != "0000":
+                merged_notes[beat] = notes + "0000"
 
         for beat, notes in right_notes:
-            if notes != '0000':
+            if notes != "0000":
                 if beat in merged_notes:
                     # Combine with existing left notes
                     left_part = merged_notes[beat][:4]
                     merged_notes[beat] = left_part + notes
                 else:
                     # Only right notes at this beat
-                    merged_notes[beat] = '0000' + notes
+                    merged_notes[beat] = "0000" + notes
 
         # Count notes and populate note_data
         for beat in sorted(merged_notes.keys()):
             note_line = merged_notes[beat]
-            tap_count = note_line.count('1')
+            tap_count = note_line.count("1")
 
             if tap_count > 0:
                 note_data.tap_notes += tap_count
@@ -410,8 +435,7 @@ class DWIParser:
         """
         # Detect scale type
         detected_scale, confidence = self.scale_detector.detect_scale(
-            chart_data.filepath,
-            chart_data
+            chart_data.filepath, chart_data
         )
 
         # Update chart data
@@ -429,7 +453,7 @@ class DWIParser:
                 chart.rating,
                 detected_scale,
                 notes_per_second=notes_per_second,
-                total_notes=chart.total_notes
+                total_notes=chart.total_notes,
             )
             chart_data.normalized_ratings[difficulty_key] = normalized_rating
 
@@ -464,7 +488,9 @@ class DWIParser:
         return chart.total_notes / duration_seconds
 
 
-def parse_dwi_file(filepath: str, target_scale: ScaleType = ScaleType.MODERN_DDR) -> ChartData:
+def parse_dwi_file(
+    filepath: str, target_scale: ScaleType = ScaleType.MODERN_DDR
+) -> ChartData:
     """
     Convenience function to parse a .dwi file.
 

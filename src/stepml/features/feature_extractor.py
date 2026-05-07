@@ -1,11 +1,17 @@
 """
 Feature extraction for StepMania charts.
 """
-import numpy as np
-from typing import List, Dict, Tuple
-from pathlib import Path
 
-from stepml.utils.data_structures import ChartData, ChartType, NoteData, FeatureSet, TimingEvent
+from typing import Dict, List, Tuple
+
+import numpy as np
+
+from stepml.utils.data_structures import (
+    ChartData,
+    ChartType,
+    FeatureSet,
+    NoteData,
+)
 
 
 class FeatureExtractor:
@@ -15,7 +21,9 @@ class FeatureExtractor:
         """Initialize the feature extractor."""
         pass
 
-    def extract_features(self, chart_data: ChartData, note_data: NoteData) -> FeatureSet:
+    def extract_features(
+        self, chart_data: ChartData, note_data: NoteData
+    ) -> FeatureSet:
         """
         Extract all features from a chart.
 
@@ -37,9 +45,9 @@ class FeatureExtractor:
 
         # Check for advanced timing features
         features.has_advanced_timing = (
-            len(chart_data.stops) > 0 or
-            len(chart_data.delays) > 0 or
-            len(chart_data.warps) > 0
+            len(chart_data.stops) > 0
+            or len(chart_data.delays) > 0
+            or len(chart_data.warps) > 0
         )
 
         # Extract timing-based features
@@ -68,15 +76,18 @@ class FeatureExtractor:
 
         return features
 
-    def _extract_timing_features(self, chart_data: ChartData, note_data: NoteData,
-                                 features: FeatureSet):
+    def _extract_timing_features(
+        self, chart_data: ChartData, note_data: NoteData, features: FeatureSet
+    ):
         """Extract timing-related features."""
         # BPM analysis
         features.bpm_changes = len(chart_data.bpms)
 
         if chart_data.bpms:
             bpm_values = [bpm.value for bpm in chart_data.bpms]
-            features.bpm_variance = float(np.var(bpm_values)) if len(bpm_values) > 1 else 0.0
+            features.bpm_variance = (
+                float(np.var(bpm_values)) if len(bpm_values) > 1 else 0.0
+            )
 
         # Stop analysis
         features.stop_count = len(chart_data.stops)
@@ -103,27 +114,35 @@ class FeatureExtractor:
         features.roll_ratio = note_data.roll_notes / note_data.total_notes
         features.mine_ratio = note_data.mine_notes / note_data.total_notes
 
-    def _extract_density_features(self, chart_data: ChartData, note_data: NoteData,
-                                  features: FeatureSet):
+    def _extract_density_features(
+        self, chart_data: ChartData, note_data: NoteData, features: FeatureSet
+    ):
         """Extract note density features."""
         if features.chart_length_seconds <= 0 or not note_data.note_positions:
             return
 
         # Overall density
-        features.notes_per_second = note_data.total_notes / features.chart_length_seconds
+        features.notes_per_second = (
+            note_data.total_notes / features.chart_length_seconds
+        )
         features.average_density = note_data.total_notes / features.chart_length_beats
 
         # Calculate peak density using sliding window
         window_size = 8.0  # 8 beats (2 measures)
-        peak_density = self._calculate_peak_density(note_data.note_positions, window_size)
+        peak_density = self._calculate_peak_density(
+            note_data.note_positions, window_size
+        )
         features.peak_density = peak_density
 
         # Calculate density variance
-        density_variance = self._calculate_density_variance(note_data.note_positions, window_size)
+        density_variance = self._calculate_density_variance(
+            note_data.note_positions, window_size
+        )
         features.density_variance = density_variance
 
-    def _extract_technical_features(self, chart_data: ChartData, note_data: NoteData,
-                                    features: FeatureSet):
+    def _extract_technical_features(
+        self, chart_data: ChartData, note_data: NoteData, features: FeatureSet
+    ):
         """Extract technical difficulty features."""
         # These are handled in the basic extraction above
         # Can be extended with more complex analysis like:
@@ -133,7 +152,9 @@ class FeatureExtractor:
         # - Direction change analysis
         pass
 
-    def _calculate_chart_duration(self, chart_data: ChartData, total_beats: float) -> float:
+    def _calculate_chart_duration(
+        self, chart_data: ChartData, total_beats: float
+    ) -> float:
         """
         Calculate chart duration in seconds accounting for BPM changes.
 
@@ -148,7 +169,6 @@ class FeatureExtractor:
             return 0.0
 
         total_seconds = 0.0
-        current_beat = 0.0
 
         # Sort BPM changes by beat
         bpm_changes = sorted(chart_data.bpms, key=lambda x: x.beat)
@@ -173,8 +193,9 @@ class FeatureExtractor:
 
         return total_seconds
 
-    def _calculate_peak_density(self, note_positions: List[Tuple[float, str]],
-                               window_size: float) -> float:
+    def _calculate_peak_density(
+        self, note_positions: List[Tuple[float, str]], window_size: float
+    ) -> float:
         """
         Calculate peak note density using a sliding window.
 
@@ -211,8 +232,9 @@ class FeatureExtractor:
 
         return max_density
 
-    def _calculate_density_variance(self, note_positions: List[Tuple[float, str]],
-                                   window_size: float) -> float:
+    def _calculate_density_variance(
+        self, note_positions: List[Tuple[float, str]], window_size: float
+    ) -> float:
         """
         Calculate variance in note density across the chart.
 
@@ -238,8 +260,7 @@ class FeatureExtractor:
             window_end = window_start + window_size
 
             notes_in_window = sum(
-                1 for beat, _ in sorted_positions
-                if window_start <= beat < window_end
+                1 for beat, _ in sorted_positions if window_start <= beat < window_end
             )
 
             density = notes_in_window / window_size
@@ -250,16 +271,29 @@ class FeatureExtractor:
     # ------------------------------------------------------------------ #
     # x-position lookup tables (lateral only; Up/Down share centre x)    #
     # ------------------------------------------------------------------ #
-    _SINGLE_X = [-1.0,  0.0, 0.0, 1.0]   # L  D  U  R
+    _SINGLE_X = [-1.0, 0.0, 0.0, 1.0]  # L  D  U  R
     # Double: left pad centred at -2, right pad at +2, 2-unit gap between them
-    _DOUBLE_X = [-3.0, -2.0, -2.0, -1.0,  # Left pad:  L  D  U  R
-                  1.0,  2.0,  2.0,  3.0]  # Right pad: L  D  U  R
+    _DOUBLE_X = [
+        -3.0,
+        -2.0,
+        -2.0,
+        -1.0,  # Left pad:  L  D  U  R
+        1.0,
+        2.0,
+        2.0,
+        3.0,
+    ]  # Right pad: L  D  U  R
 
     def _col_x(self, note_data: NoteData) -> List[float]:
-        return self._DOUBLE_X if note_data.chart_type == ChartType.DOUBLE else self._SINGLE_X
+        return (
+            self._DOUBLE_X
+            if note_data.chart_type == ChartType.DOUBLE
+            else self._SINGLE_X
+        )
 
-    def _windowed_peak(self, values: np.ndarray, beats: np.ndarray,
-                       window_beats: float) -> float:
+    def _windowed_peak(
+        self, values: np.ndarray, beats: np.ndarray, window_beats: float
+    ) -> float:
         """Mean of values in the busiest window of width window_beats."""
         if len(values) == 0:
             return 0.0
@@ -270,16 +304,16 @@ class FeatureExtractor:
                 peak = max(peak, float(np.mean(values[mask])))
         return peak
 
-    def _extract_spatial_features(self, chart_data: ChartData, note_data: NoteData,
-                                  features: FeatureSet):
+    def _extract_spatial_features(
+        self, chart_data: ChartData, note_data: NoteData, features: FeatureSet
+    ):
         """Center-of-mass position, velocity, and cross-pad statistics."""
         x_pos = self._col_x(note_data)
         coms: List[float] = []
         beats: List[float] = []
 
         for beat, pattern in note_data.note_positions:
-            active = [i for i, c in enumerate(pattern)
-                      if c in '124' and i < len(x_pos)]
+            active = [i for i, c in enumerate(pattern) if c in "124" and i < len(x_pos)]
             if active:
                 coms.append(float(np.mean([x_pos[i] for i in active])))
                 beats.append(beat)
@@ -305,24 +339,31 @@ class FeatureExtractor:
 
         # Direction changes normalized to per-beat rate
         raw_direction_changes = int(np.sum(np.diff(np.sign(delta)) != 0))
-        features.com_direction_changes = (raw_direction_changes / features.chart_length_beats
-                                          if features.chart_length_beats > 0 else 0.0)
+        features.com_direction_changes = (
+            raw_direction_changes / features.chart_length_beats
+            if features.chart_length_beats > 0
+            else 0.0
+        )
 
         # Cross-pad rate: times COM crosses x=0 (pad boundary) per beat
         sign_changes = int(np.sum(np.diff(np.sign(coms_arr)) != 0))
-        features.cross_pad_rate = (sign_changes / features.chart_length_beats
-                                   if features.chart_length_beats > 0 else 0.0)
+        features.cross_pad_rate = (
+            sign_changes / features.chart_length_beats
+            if features.chart_length_beats > 0
+            else 0.0
+        )
 
-    def _count_crossovers_with_start(self, xs: List[float],
-                                     start_foot: int) -> Tuple[int, int]:
+    def _count_crossovers_with_start(
+        self, xs: List[float], start_foot: int
+    ) -> Tuple[int, int]:
         """
         Simulate alternating footwork starting with the given foot (0=LF, 1=RF).
 
         Returns (crossover_count, facing_change_count).  A crossover is any
         step where the moving foot lands on the wrong side of the standing foot.
         """
-        foot_x = [-1.0, 1.0]   # [LF_x, RF_x] — reasonable starting positions
-        facing = 1              # +1 forward (RF >= LF), -1 crossed
+        foot_x = [-1.0, 1.0]  # [LF_x, RF_x] — reasonable starting positions
+        facing = 1  # +1 forward (RF >= LF), -1 crossed
         foot_idx = start_foot
         crossovers = 0
         facing_changes = 0
@@ -349,8 +390,7 @@ class FeatureExtractor:
         # Only track single-column steps; jumps reset foot independence
         single_xs: List[float] = []
         for _, pattern in note_data.note_positions:
-            active = [i for i, c in enumerate(pattern)
-                      if c in '124' and i < len(x_pos)]
+            active = [i for i, c in enumerate(pattern) if c in "124" and i < len(x_pos)]
             if len(active) == 1:
                 single_xs.append(x_pos[active[0]])
 
@@ -363,11 +403,14 @@ class FeatureExtractor:
         crossovers, facing_changes = (c0, f0) if c0 <= c1 else (c1, f1)
 
         features.crossover_rate = crossovers / len(single_xs)
-        features.facing_changes_per_beat = (facing_changes / features.chart_length_beats
-                                            if features.chart_length_beats > 0 else 0.0)
+        features.facing_changes_per_beat = (
+            facing_changes / features.chart_length_beats
+            if features.chart_length_beats > 0
+            else 0.0
+        )
 
     # Threshold for "short" interval: 16th note = 1/4 beat.
-    _GALLOP_SHORT = 0.25   # beats (≤ 16th note)
+    _GALLOP_SHORT = 0.25  # beats (≤ 16th note)
     # A same-column re-tap counts as a "free" repeat gallop if the note
     # sharing that column occurred within this many beats (catches both
     # AB bC and A bB gallop orientations).
@@ -404,10 +447,7 @@ class FeatureExtractor:
             pat_prev = positions[i - 1][1]
             pat_curr = positions[i][1]
 
-            col_overlap = any(
-                a == '1' and b == '1'
-                for a, b in zip(pat_prev, pat_curr)
-            )
+            col_overlap = any(a == "1" and b == "1" for a, b in zip(pat_prev, pat_curr))
 
             if gap_before <= self._SAME_COL_WINDOW and col_overlap:
                 same_col_repeat += 1
@@ -418,8 +458,7 @@ class FeatureExtractor:
                 if gap_after <= self._GALLOP_SHORT:
                     pat_next = positions[i + 1][1]
                     col_overlap_next = any(
-                        a == '1' and b == '1'
-                        for a, b in zip(pat_curr, pat_next)
+                        a == "1" and b == "1" for a, b in zip(pat_curr, pat_next)
                     )
                     if not col_overlap_next:
                         stream_interior += 1
@@ -526,13 +565,13 @@ class AdvancedFeatureExtractor(FeatureExtractor):
         features = {}
 
         # Stream detection
-        features['stream_sections'] = self._detect_streams(note_data)
+        features["stream_sections"] = self._detect_streams(note_data)
 
         # Direction changes
-        features['direction_changes'] = self._count_direction_changes(note_data)
+        features["direction_changes"] = self._count_direction_changes(note_data)
 
         # Crossover potential
-        features['crossover_potential'] = self._estimate_crossovers(note_data)
+        features["crossover_potential"] = self._estimate_crossovers(note_data)
 
         return features
 
@@ -556,7 +595,7 @@ class AdvancedFeatureExtractor(FeatureExtractor):
         sorted_positions = sorted(note_data.note_positions, key=lambda x: x[0])
 
         for i in range(1, len(sorted_positions)):
-            beat_diff = sorted_positions[i][0] - sorted_positions[i-1][0]
+            beat_diff = sorted_positions[i][0] - sorted_positions[i - 1][0]
 
             # Check for stream tempo (1/8 or 1/16 notes = 0.125 or 0.0625 beats)
             if 0.06 <= beat_diff <= 0.13:  # Allow some tolerance
@@ -585,7 +624,7 @@ class AdvancedFeatureExtractor(FeatureExtractor):
 
         prev_active_cols = None
         for _, pattern in note_data.note_positions:
-            active_cols = [i for i, char in enumerate(pattern) if char in '124']
+            active_cols = [i for i, char in enumerate(pattern) if char in "124"]
 
             if prev_active_cols and active_cols:
                 # Simple heuristic: check if direction switched
@@ -611,7 +650,7 @@ class AdvancedFeatureExtractor(FeatureExtractor):
         crossover_score = 0.0
 
         for _, pattern in note_data.note_positions:
-            active_cols = [i for i, char in enumerate(pattern) if char in '124']
+            active_cols = [i for i, char in enumerate(pattern) if char in "124"]
 
             if len(active_cols) == 2:
                 # Check distance between arrows
@@ -619,4 +658,8 @@ class AdvancedFeatureExtractor(FeatureExtractor):
                 if distance > 1:  # Non-adjacent = potential crossover
                     crossover_score += 1.0
 
-        return crossover_score / len(note_data.note_positions) if note_data.note_positions else 0.0
+        return (
+            crossover_score / len(note_data.note_positions)
+            if note_data.note_positions
+            else 0.0
+        )

@@ -11,12 +11,10 @@ Features:
 """
 
 import argparse
-import json
 import random
 import re
-from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional
+from typing import List, Optional, Set, Tuple
 
 import pandas as pd
 
@@ -41,7 +39,7 @@ class PlaylistGenerator:
         print(f"Loading ratings from {ratings_file}...")
         self.df = pd.read_parquet(ratings_file)
         print(f"  Loaded {len(self.df)} charts")
-        
+
         # Build index for fast song lookup
         self._build_song_index()
 
@@ -56,7 +54,7 @@ class PlaylistGenerator:
         if favorites_single_file and favorites_single_file.exists():
             self.favorites_single = self._load_song_list(favorites_single_file)
             print(f"  Loaded {len(self.favorites_single)} single favorites")
-        
+
         self.favorites_double = set()
         if favorites_double_file and favorites_double_file.exists():
             self.favorites_double = self._load_song_list(favorites_double_file)
@@ -69,15 +67,15 @@ class PlaylistGenerator:
             normalized = self._normalize_path(row["file_path"])
             difficulty = row["difficulty"].upper()
             self.song_index.add((normalized, difficulty))
-    
+
     def _load_song_list(self, filepath: Path) -> Set[Tuple[str, str]]:
         """Load a .songs file and extract (pack/song, difficulty) tuples.
-        
+
         Validates that all songs exist in the dataset and fails fast if not.
         """
         songs = set()
         errors = []
-        
+
         with open(filepath) as f:
             for line_num, line in enumerate(f, start=1):
                 line = line.strip()
@@ -88,19 +86,23 @@ class PlaylistGenerator:
                 if match:
                     path, difficulty = match.groups()
                     songs.add((path, difficulty.upper()))
-                    
+
                     # Validate that this song exists in our dataset
                     normalized = self._normalize_path_from_songs_format(path)
                     if not self._song_exists(normalized, difficulty.upper()):
                         # Try to find similar songs to help user
                         suggestion = self._find_similar_song(path, difficulty.upper())
-                        error_msg = f"  Line {line_num}: Song not found - {path}:{difficulty}"
+                        error_msg = (
+                            f"  Line {line_num}: Song not found - {path}:{difficulty}"
+                        )
                         if suggestion:
-                            error_msg += f"\n    Did you mean: {suggestion[0]}:{suggestion[1]}?"
+                            error_msg += (
+                                f"\n    Did you mean: {suggestion[0]}:{suggestion[1]}?"
+                            )
                         errors.append(error_msg)
                 else:
                     errors.append(f"  Line {line_num}: Malformed line - {line}")
-        
+
         if errors:
             print(f"\n❌ Errors in {filepath.name}:")
             for error in errors:
@@ -108,54 +110,58 @@ class PlaylistGenerator:
             print("\nPlease fix these errors and try again.")
             print("Tip: Check pack names match exactly (case-sensitive)")
             raise ValueError(f"Invalid entries in {filepath.name}")
-        
+
         return songs
-    
+
     def _normalize_path_from_songs_format(self, songs_path: str) -> str:
         """Convert .songs format (Pack/Song) to match dataset format.
-        
+
         Args:
             songs_path: Path from .songs file, e.g., "DDR EXTREME/The Least 100sec"
-            
+
         Returns:
             Normalized path for matching, e.g., "DDR EXTREME/The Least 100sec"
         """
         return songs_path
-    
+
     def _song_exists(self, pack_song: str, difficulty: str) -> bool:
         """Check if a song with given difficulty exists in the dataset.
-        
+
         Args:
             pack_song: Pack/Song format, e.g., "DDR EXTREME/The Least 100sec"
             difficulty: Difficulty name (uppercase), e.g., "HARD"
-            
+
         Returns:
             True if the song exists with that difficulty
         """
         return (pack_song, difficulty) in self.song_index
-    
-    def _find_similar_song(self, pack_song: str, difficulty: str) -> Optional[Tuple[str, str]]:
+
+    def _find_similar_song(
+        self, pack_song: str, difficulty: str
+    ) -> Optional[Tuple[str, str]]:
         """Try to find a similar song to suggest as correction.
-        
+
         Args:
             pack_song: Pack/Song format that wasn't found
             difficulty: Difficulty that wasn't found
-            
+
         Returns:
             Tuple of (corrected_path, corrected_difficulty) or None
         """
-        song_name = pack_song.split('/')[-1] if '/' in pack_song else pack_song
-        
+        song_name = pack_song.split("/")[-1] if "/" in pack_song else pack_song
+
         # Look for songs with matching name (case-insensitive) in any pack
-        for (indexed_path, indexed_diff) in self.song_index:
-            indexed_song = indexed_path.split('/')[-1] if '/' in indexed_path else indexed_path
+        for indexed_path, indexed_diff in self.song_index:
+            indexed_song = (
+                indexed_path.split("/")[-1] if "/" in indexed_path else indexed_path
+            )
             if indexed_song.lower() == song_name.lower():
                 # Found a match! Check if difficulty exists, or suggest closest
                 if (indexed_path, difficulty) in self.song_index:
                     return (indexed_path, difficulty)
                 elif (indexed_path, indexed_diff) in self.song_index:
                     return (indexed_path, indexed_diff)
-        
+
         return None
 
     def _normalize_path(self, file_path: str) -> str:
@@ -178,7 +184,7 @@ class PlaylistGenerator:
         """Check if a chart is in the appropriate favorites list."""
         normalized = self._normalize_path(row["file_path"])
         difficulty = row["difficulty"].upper()
-        
+
         # Check the appropriate favorites list based on chart type
         if chart_type == "dance-single":
             return (normalized, difficulty) in self.favorites_single
@@ -265,7 +271,9 @@ class PlaylistGenerator:
         ].copy()
 
         if len(tier_df) == 0:
-            print(f"  {tier_name}: No charts in range {min_rating:.1f}-{max_rating:.1f}")
+            print(
+                f"  {tier_name}: No charts in range {min_rating:.1f}-{max_rating:.1f}"
+            )
             return
 
         print(f"\n  {tier_name} ({min_rating:.1f}-{max_rating:.1f}):")
@@ -291,7 +299,9 @@ class PlaylistGenerator:
         # Generate .songs file
         style = "Double" if chart_type == "dance-double" else "Single"
         avg_rating = round((min_rating + max_rating) / 2)
-        output_file = self.courses_dir / f"{style}-{avg_rating:02d}-{tier_name.upper()}.songs"
+        output_file = (
+            self.courses_dir / f"{style}-{avg_rating:02d}-{tier_name.upper()}.songs"
+        )
 
         with open(output_file, "w") as f:
             f.write(f"#COURSE:{style} {avg_rating:02d} {tier_name.upper()};\n")
@@ -308,9 +318,7 @@ class PlaylistGenerator:
         print(
             f"    Rating range: {selected['calculated_rating'].min():.1f} - {selected['calculated_rating'].max():.1f}"
         )
-        print(
-            f"    Rating median: {selected['calculated_rating'].median():.1f}"
-        )
+        print(f"    Rating median: {selected['calculated_rating'].median():.1f}")
 
     def generate_random_courses(self, course_length: int = 4, num_variants: int = 5):
         """
@@ -347,8 +355,7 @@ class PlaylistGenerator:
             # (no need to shuffle because endless mode already does)
             crs_file = self.courses_dir / f"Endless-{base_name}.crs"
             with open(crs_file, "w") as f:
-                course_label = course_name \
-                    .replace(";", " ENDLESS;\n")
+                course_label = course_name.replace(";", " ENDLESS;\n")
                 f.write(course_label)
                 for song in songs:
                     f.write(song + "\n")
@@ -367,8 +374,8 @@ class PlaylistGenerator:
                             difficulty = float(tokens[1].strip())
                             return (difficulty, song_line)
                         except ValueError:
-                            return (float('inf'), song_line)
-                    return (float('inf'), song_line)
+                            return (float("inf"), song_line)
+                    return (float("inf"), song_line)
 
                 selected = sorted(selected, key=get_difficulty_key)
 
@@ -439,8 +446,12 @@ def main():
         ratings_file=args.ratings,
         courses_dir=args.output,
         veto_file=args.veto if args.veto.exists() else None,
-        favorites_single_file=args.favorites_single if args.favorites_single and args.favorites_single.exists() else None,
-        favorites_double_file=args.favorites_double if args.favorites_double and args.favorites_double.exists() else None,
+        favorites_single_file=args.favorites_single
+        if args.favorites_single and args.favorites_single.exists()
+        else None,
+        favorites_double_file=args.favorites_double
+        if args.favorites_double and args.favorites_double.exists()
+        else None,
     )
 
     # Generate playlists for each chart type

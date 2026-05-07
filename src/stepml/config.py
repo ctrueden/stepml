@@ -4,8 +4,9 @@ Configuration and environment-aware path handling for StepMania resources.
 Allows users to override the default StepMania directory via STEPMANIA_HOME
 environment variable, useful when StepMania is installed in non-standard locations.
 """
-from pathlib import Path
+
 import os
+from pathlib import Path
 
 
 def get_stepmania_home() -> Path:

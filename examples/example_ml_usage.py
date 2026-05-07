@@ -8,11 +8,12 @@ Demonstrates:
 4. Analyzing feature contributions
 """
 
+import sys
 from pathlib import Path
 
+from stepml.features.feature_extractor import FeatureExtractor
 from stepml.models.baseline_models import LinearRegressionModel, RandomForestModel
 from stepml.parsers.universal_parser import parse_chart_file
-from stepml.features.feature_extractor import FeatureExtractor
 from stepml.utils import get_models_dir
 
 
@@ -47,20 +48,22 @@ def predict_chart_difficulty(chart_path: str, models_dir: Path):
     try:
         lr_model.load(models_dir)
         print("   ✓ Loaded Linear Regression model")
-    except:
+    except Exception:
         print("   ✗ Linear Regression model not found")
         lr_model = None
 
     try:
         rf_model.load(models_dir)
         print("   ✓ Loaded Random Forest model")
-    except:
+    except Exception:
         print("   ✗ Random Forest model not found")
         rf_model = None
 
     # Predict for each chart
-    print(f"\n3. Predicting difficulty ratings:")
-    print(f"   {'Difficulty':<12} {'Original':<10} {'Linear Reg':<12} {'Random Forest':<14}")
+    print("\n3. Predicting difficulty ratings:")
+    print(
+        f"   {'Difficulty':<12} {'Original':<10} {'Linear Reg':<12} {'Random Forest':<14}"
+    )
     print(f"   {'-' * 12} {'-' * 10} {'-' * 12} {'-' * 14}")
 
     for chart in chart_data.charts:
@@ -71,6 +74,7 @@ def predict_chart_difficulty(chart_path: str, models_dir: Path):
         # Prepare feature vector (must match training order)
         if lr_model:
             import pandas as pd
+
             X = pd.DataFrame([feature_dict])[lr_model.feature_names]
             X_scaled = lr_model.scaler.transform(X)
 
@@ -78,15 +82,19 @@ def predict_chart_difficulty(chart_path: str, models_dir: Path):
             lr_pred = lr_model.model.predict(X_scaled)[0] if lr_model else None
             rf_pred = rf_model.model.predict(X_scaled)[0] if rf_model else None
 
-            print(f"   {chart.difficulty.value:<12} "
-                  f"{chart.rating:<10.1f} "
-                  f"{lr_pred if lr_pred else 'N/A':<12.2f} "
-                  f"{rf_pred if rf_pred else 'N/A':<14.2f}")
+            print(
+                f"   {chart.difficulty.value:<12} "
+                f"{chart.rating:<10.1f} "
+                f"{lr_pred if lr_pred else 'N/A':<12.2f} "
+                f"{rf_pred if rf_pred else 'N/A':<14.2f}"
+            )
         else:
-            print(f"   {chart.difficulty.value:<12} "
-                  f"{chart.rating:<10.1f} "
-                  f"{'N/A':<12} "
-                  f"{'N/A':<14}")
+            print(
+                f"   {chart.difficulty.value:<12} "
+                f"{chart.rating:<10.1f} "
+                f"{'N/A':<12} "
+                f"{'N/A':<14}"
+            )
 
     # Show key features for one chart
     if chart_data.charts and rf_model:
@@ -98,10 +106,12 @@ def predict_chart_difficulty(chart_path: str, models_dir: Path):
         if feature_importance is not None:
             top_features = feature_importance.head(5)
             for i, row in top_features.iterrows():
-                feat_name = row['feature']
+                feat_name = row["feature"]
                 feat_value = getattr(features, feat_name, None)
                 if feat_value is not None:
-                    print(f"   {feat_name}: {feat_value:.3f} (importance: {row['importance']:.3f})")
+                    print(
+                        f"   {feat_name}: {feat_value:.3f} (importance: {row['importance']:.3f})"
+                    )
 
     print("\n" + "=" * 60)
 
@@ -110,7 +120,9 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python example_ml_usage.py <chart_file>")
         print("\nExample:")
-        print('  python example_ml_usage.py "../Songs/StepMania 5/Goin\' Under/Goin\' Under.sm"')
+        print(
+            "  python example_ml_usage.py \"../Songs/StepMania 5/Goin' Under/Goin' Under.sm\""
+        )
         sys.exit(1)
 
     chart_path = sys.argv[1]
@@ -128,5 +140,5 @@ def main():
     predict_chart_difficulty(chart_path, models_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

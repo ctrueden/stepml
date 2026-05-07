@@ -8,9 +8,17 @@ dependencies = [
     "numpy>=2.3.4",
     "pandas>=2.3.3",
     "pyarrow>=22.0.0",
-    "pytest>=8.0.0",
     "pyyaml>=6.0.3",
     "scikit-learn>=1.7.2",
+]
+
+[dependency-groups]
+# Development tools
+dev = [
+    "build",
+    "pytest>=8.0.0",
+    "ruff",
+    "validate-pyproject[all]",
 ]
 
 [project.scripts]

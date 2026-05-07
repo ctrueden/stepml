@@ -1,19 +1,24 @@
 """
 Parser for StepMania 5 .ssc files.
 """
+
 import logging
 import re
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
-
-logger = logging.getLogger(__name__)
+from typing import List
 
 from stepml.utils.data_structures import (
-    ChartData, NoteData, TimingEvent, ChartType,
-    DifficultyType, ScaleType
+    ChartData,
+    ChartType,
+    DifficultyType,
+    NoteData,
+    ScaleType,
+    TimingEvent,
 )
-from stepml.utils.scale_detector import ScaleDetector
 from stepml.utils.rating_normalizer import RatingNormalizer
+from stepml.utils.scale_detector import ScaleDetector
+
+logger = logging.getLogger(__name__)
 
 
 class SSCParser:
@@ -62,17 +67,18 @@ class SSCParser:
             raise FileNotFoundError(f"File not found: {filepath}")
 
         # Read file content, stripping // comment lines
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            content = '\n'.join(
-                line for line in f.read().splitlines()
-                if not line.lstrip().startswith('//')
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            content = "\n".join(
+                line
+                for line in f.read().splitlines()
+                if not line.lstrip().startswith("//")
             )
 
         # Create ChartData object
         chart_data = ChartData(
             filepath=str(filepath),
             format=filepath.suffix,
-            songpack=filepath.parent.parent.name  # Assuming Songs/PackName/Song/file.ssc
+            songpack=filepath.parent.parent.name,  # Assuming Songs/PackName/Song/file.ssc
         )
 
         # Parse all tags
@@ -87,9 +93,10 @@ class SSCParser:
 
     def _parse_metadata(self, content: str, chart_data: ChartData):
         """Extract metadata tags from .ssc file."""
+
         # Simple tag parser - handles #TAG:value;
         def get_tag_value(tag_name: str) -> str:
-            pattern = rf'#\s*{tag_name}\s*:\s*([^;]*);'
+            pattern = rf"#\s*{tag_name}\s*:\s*([^;]*);"
             match = re.search(pattern, content, re.IGNORECASE | re.MULTILINE)
             if match:
                 return match.group(1).strip()
@@ -133,29 +140,37 @@ class SSCParser:
     def _parse_timing(self, content: str, chart_data: ChartData):
         """Parse timing information (BPMs, stops, delays, warps, etc.)."""
         # Parse BPMs
-        bpm_pattern = r'#\s*BPMS\s*:\s*([^;]+);'
-        bpm_match = re.search(bpm_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
+        bpm_pattern = r"#\s*BPMS\s*:\s*([^;]+);"
+        bpm_match = re.search(
+            bpm_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL
+        )
         if bpm_match:
             bpm_data = bpm_match.group(1)
             chart_data.bpms = self._parse_timing_list(bpm_data)
 
         # Parse stops
-        stops_pattern = r'#\s*STOPS\s*:\s*([^;]+);'
-        stops_match = re.search(stops_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
+        stops_pattern = r"#\s*STOPS\s*:\s*([^;]+);"
+        stops_match = re.search(
+            stops_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL
+        )
         if stops_match:
             stops_data = stops_match.group(1)
             chart_data.stops = self._parse_timing_list(stops_data)
 
         # Parse delays (SSC-specific)
-        delays_pattern = r'#\s*DELAYS\s*:\s*([^;]+);'
-        delays_match = re.search(delays_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
+        delays_pattern = r"#\s*DELAYS\s*:\s*([^;]+);"
+        delays_match = re.search(
+            delays_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL
+        )
         if delays_match:
             delays_data = delays_match.group(1)
             chart_data.delays = self._parse_timing_list(delays_data)
 
         # Parse warps (SSC-specific)
-        warps_pattern = r'#\s*WARPS\s*:\s*([^;]+);'
-        warps_match = re.search(warps_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
+        warps_pattern = r"#\s*WARPS\s*:\s*([^;]+);"
+        warps_match = re.search(
+            warps_pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL
+        )
         if warps_match:
             warps_data = warps_match.group(1)
             chart_data.warps = self._parse_timing_list(warps_data)
@@ -172,13 +187,13 @@ class SSCParser:
         """
         events = []
         # Split by comma and parse each pair
-        pairs = timing_str.split(',')
+        pairs = timing_str.split(",")
         for pair in pairs:
             pair = pair.strip()
-            if '=' not in pair:
+            if "=" not in pair:
                 continue
             try:
-                beat_str, value_str = pair.split('=', 1)
+                beat_str, value_str = pair.split("=", 1)
                 beat = float(beat_str.strip())
                 value = float(value_str.strip())
                 events.append(TimingEvent(beat=beat, value=value))
@@ -195,7 +210,7 @@ class SSCParser:
         metadata, and then #NOTES: with the actual note data.
         """
         # Split content by #NOTEDATA: markers
-        notedata_sections = re.split(r'#NOTEDATA\s*:', content, flags=re.IGNORECASE)
+        notedata_sections = re.split(r"#NOTEDATA\s*:", content, flags=re.IGNORECASE)
 
         # Skip first section (global metadata)
         for section in notedata_sections[1:]:
@@ -219,9 +234,10 @@ class SSCParser:
         [note data]
         ;
         """
+
         # Extract per-chart metadata
         def get_tag_value(tag_name: str) -> str:
-            pattern = rf'#\s*{tag_name}\s*:\s*([^;]*);'
+            pattern = rf"#\s*{tag_name}\s*:\s*([^;]*);"
             match = re.search(pattern, section, re.IGNORECASE | re.MULTILINE)
             if match:
                 return match.group(1).strip()
@@ -246,8 +262,10 @@ class SSCParser:
             rating = 0
 
         # Extract notes data (everything after #NOTES: and before the closing ;)
-        notes_pattern = r'#NOTES\s*:\s*([^;]+);'
-        notes_match = re.search(notes_pattern, section, re.IGNORECASE | re.MULTILINE | re.DOTALL)
+        notes_pattern = r"#NOTES\s*:\s*([^;]+);"
+        notes_match = re.search(
+            notes_pattern, section, re.IGNORECASE | re.MULTILINE | re.DOTALL
+        )
 
         if not notes_match:
             return
@@ -259,7 +277,7 @@ class SSCParser:
             chart_type=chart_type,
             difficulty=difficulty,
             rating=rating,
-            raw_notes=notes_data
+            raw_notes=notes_data,
         )
 
         # Parse the note data (same format as .sm)
@@ -268,24 +286,34 @@ class SSCParser:
         # Deduplicate: if a chart with the same type+difficulty already exists,
         # keep whichever has more notes (drops groove-radar-only dummy charts).
         existing = next(
-            (i for i, c in enumerate(chart_data.charts)
-             if c.chart_type == note_data.chart_type and c.difficulty == note_data.difficulty),
-            None
+            (
+                i
+                for i, c in enumerate(chart_data.charts)
+                if c.chart_type == note_data.chart_type
+                and c.difficulty == note_data.difficulty
+            ),
+            None,
         )
         if existing is not None:
             kept = chart_data.charts[existing]
             if note_data.total_notes > kept.total_notes:
                 logger.warning(
                     "Duplicate %s %s in %s — dropping %d-note entry, keeping %d-note entry",
-                    note_data.chart_type.value, note_data.difficulty.value, chart_data.filepath,
-                    kept.total_notes, note_data.total_notes
+                    note_data.chart_type.value,
+                    note_data.difficulty.value,
+                    chart_data.filepath,
+                    kept.total_notes,
+                    note_data.total_notes,
                 )
                 chart_data.charts[existing] = note_data
             else:
                 logger.warning(
                     "Duplicate %s %s in %s — dropping %d-note entry, keeping %d-note entry",
-                    note_data.chart_type.value, note_data.difficulty.value, chart_data.filepath,
-                    note_data.total_notes, kept.total_notes
+                    note_data.chart_type.value,
+                    note_data.difficulty.value,
+                    chart_data.filepath,
+                    note_data.total_notes,
+                    kept.total_notes,
                 )
         else:
             chart_data.charts.append(note_data)
@@ -315,7 +343,7 @@ class SSCParser:
             note_data: NoteData object to populate
         """
         # Split by comma to get measures
-        measures = notes_str.split(',')
+        measures = notes_str.split(",")
 
         current_beat = 0.0
 
@@ -329,7 +357,9 @@ class SSCParser:
 
         for measure_idx, measure in enumerate(measures):
             # Remove whitespace and get note lines
-            lines = [line.strip() for line in measure.strip().split('\n') if line.strip()]
+            lines = [
+                line.strip() for line in measure.strip().split("\n") if line.strip()
+            ]
 
             if not lines:
                 current_beat += 4.0  # Empty measure
@@ -341,7 +371,7 @@ class SSCParser:
 
             for line_idx, line in enumerate(lines):
                 # Remove any non-note characters
-                line = re.sub(r'[^0-9M]', '', line.upper())
+                line = re.sub(r"[^0-9M]", "", line.upper())
 
                 if len(line) < columns:
                     continue  # Skip malformed lines
@@ -355,16 +385,16 @@ class SSCParser:
                 mine_count = 0
 
                 for char in line[:columns]:
-                    if char == '1':
+                    if char == "1":
                         tap_count += 1
                         note_data.tap_notes += 1
-                    elif char == '2':
+                    elif char == "2":
                         hold_count += 1
                         note_data.hold_notes += 1
-                    elif char == '4':
+                    elif char == "4":
                         roll_count += 1
                         note_data.roll_notes += 1
-                    elif char == 'M':
+                    elif char == "M":
                         mine_count += 1
                         note_data.mine_notes += 1
 
@@ -380,7 +410,9 @@ class SSCParser:
             current_beat += 4.0  # Move to next measure
 
         # Calculate total notes (excluding mines and hold/roll tails)
-        note_data.total_notes = note_data.tap_notes + note_data.hold_notes + note_data.roll_notes
+        note_data.total_notes = (
+            note_data.tap_notes + note_data.hold_notes + note_data.roll_notes
+        )
 
     def _detect_and_normalize_scale(self, chart_data: ChartData):
         """
@@ -391,8 +423,7 @@ class SSCParser:
         """
         # Detect scale type
         detected_scale, confidence = self.scale_detector.detect_scale(
-            chart_data.filepath,
-            chart_data
+            chart_data.filepath, chart_data
         )
 
         # Update chart data
@@ -410,7 +441,7 @@ class SSCParser:
                 chart.rating,
                 detected_scale,
                 notes_per_second=notes_per_second,
-                total_notes=chart.total_notes
+                total_notes=chart.total_notes,
             )
             chart_data.normalized_ratings[difficulty_key] = normalized_rating
 
@@ -445,7 +476,9 @@ class SSCParser:
         return chart.total_notes / duration_seconds
 
 
-def parse_ssc_file(filepath: str, target_scale: ScaleType = ScaleType.MODERN_DDR) -> ChartData:
+def parse_ssc_file(
+    filepath: str, target_scale: ScaleType = ScaleType.MODERN_DDR
+) -> ChartData:
     """
     Convenience function to parse a .ssc file.
 
