@@ -390,14 +390,20 @@ class RandomForestModel(BaselineModel):
 
     def __init__(
         self,
-        n_estimators: int = 100,
-        max_depth: Optional[int] = None,
+        n_estimators: int = 300,
+        max_depth: Optional[int] = 18,
+        min_samples_leaf: int = 5,
         random_state: int = 42,
     ):
         super().__init__("random_forest")
+        # min_samples_leaf is the key regularizer: with the default of 1, leaves
+        # can memorize single charts, which made the model's response to any one
+        # feature jumpy and non-monotonic (e.g. peak_density 1.75 -> 11.5 but
+        # 2.0 -> 10.1). Averaging over >=5 charts per leaf smooths that out.
         self.model = RandomForestRegressor(
             n_estimators=n_estimators,
             max_depth=max_depth,
+            min_samples_leaf=min_samples_leaf,
             random_state=random_state,
             n_jobs=-1,  # Use all CPU cores
         )

@@ -64,7 +64,9 @@ def main():
     # Initialize models
     models = {
         "Linear Regression": LinearRegressionModel(),
-        "Random Forest": RandomForestModel(n_estimators=100, max_depth=20),
+        # Regularized RF (see RandomForestModel defaults): more trees, capped
+        # depth, and min_samples_leaf to keep per-feature response smooth.
+        "Random Forest": RandomForestModel(),
     }
 
     # Store results
