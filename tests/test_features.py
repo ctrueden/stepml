@@ -52,9 +52,11 @@ class TestFeatureExtraction:
                     "Density variance should be non-negative"
                 )
 
-                # Peak should be >= average
-                assert features.peak_density >= features.average_density, (
-                    "Peak density should be >= average density"
+                # Peak NPS should be >= overall NPS (both notes/second).
+                # (peak_density is tempo-aware notes/second; average_density is
+                # notes/beat, so they are no longer directly comparable.)
+                assert features.peak_density >= features.notes_per_second, (
+                    "Peak density (NPS) should be >= overall NPS"
                 )
 
                 # Ratios should be between 0 and 1

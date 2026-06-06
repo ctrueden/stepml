@@ -141,9 +141,12 @@ class FeatureSet:
 
     # Density metrics
     notes_per_second: float = 0.0
+    # peak_density: notes/second in the busiest 8-beat (2-measure) window.
+    #   Tempo-aware (converted from notes/beat via the chart's average BPS) so a
+    #   dense burst at high BPM rates harder than the same notes/beat at low BPM.
     peak_density: float = 0.0
-    density_variance: float = 0.0
-    average_density: float = 0.0
+    density_variance: float = 0.0  # variance of notes/beat across 8-beat windows
+    average_density: float = 0.0  # notes/beat averaged over the whole chart
 
     # Pattern complexity
     jump_ratio: float = 0.0

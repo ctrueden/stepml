@@ -127,12 +127,19 @@ class FeatureExtractor:
         )
         features.average_density = note_data.total_notes / features.chart_length_beats
 
-        # Calculate peak density using sliding window
+        # Calculate peak density using sliding window.
+        # The window is measured in beats (8 beats = 2 measures, a musically
+        # meaningful span) but the result is converted to notes/second so that
+        # tempo is captured: a dense 2-measure burst at 180 BPM is far harder
+        # than the same notes-per-beat at 115 BPM.  Without this conversion the
+        # feature is tempo-blind and two charts with similar notes/beat but very
+        # different BPM collapse to the same difficulty.
         window_size = 8.0  # 8 beats (2 measures)
-        peak_density = self._calculate_peak_density(
+        peak_density_per_beat = self._calculate_peak_density(
             note_data.note_positions, window_size
         )
-        features.peak_density = peak_density
+        beats_per_second = features.chart_length_beats / features.chart_length_seconds
+        features.peak_density = peak_density_per_beat * beats_per_second
 
         # Calculate density variance
         density_variance = self._calculate_density_variance(
