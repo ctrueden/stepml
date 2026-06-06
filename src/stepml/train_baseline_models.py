@@ -91,19 +91,31 @@ def main():
             metrics = model.evaluate(X_test, y_test)
             results[model_name] = metrics
 
-            # Feature importance (if available)
+            # Impurity-based feature importance (if available)
             feature_importance = model.get_feature_importance()
             if feature_importance is not None:
-                logger.info("\nTop 10 Most Important Features:")
-                for i, row in feature_importance.head(10).iterrows():
-                    logger.info(f"  {i + 1}. {row['feature']}: {row['importance']:.4f}")
-
-                # Save feature importance
+                # Save impurity importance (kept for reference / comparison)
                 importance_path = (
                     args.output_dir / f"{model.model_name}_feature_importance.csv"
                 )
                 feature_importance.to_csv(importance_path, index=False)
-                logger.info(f"\nSaved feature importance to {importance_path}")
+                logger.info(f"\nSaved impurity importance to {importance_path}")
+
+            # Permutation importance: the honest, collinearity-robust measure of
+            # each feature's contribution to held-out accuracy. Reported as the
+            # primary importance.
+            perm_importance = model.get_permutation_importance(X_test, y_test)
+            logger.info("\nTop 10 Features by Permutation Importance:")
+            for rank, (_, row) in enumerate(perm_importance.head(10).iterrows(), 1):
+                logger.info(
+                    f"  {rank}. {row['feature']}: "
+                    f"{row['importance']:.4f} ± {row['importance_std']:.4f}"
+                )
+            perm_path = (
+                args.output_dir / f"{model.model_name}_permutation_importance.csv"
+            )
+            perm_importance.to_csv(perm_path, index=False)
+            logger.info(f"Saved permutation importance to {perm_path}")
 
             # Save model
             model.save(args.output_dir)

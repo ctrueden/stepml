@@ -118,8 +118,15 @@ class BaselineModel:
                 "scale_confidence",
                 # Raw counts that conflate difficulty with song length;
                 # their rate-based equivalents (notes_per_second,
-                # average_density, chart_length_*) are kept instead.
+                # chart_length_*) are kept instead.
                 "total_notes",
+                # Tempo-blind notes/beat density features. They are highly
+                # collinear with notes_per_second / peak_density (the tempo-aware
+                # versions) and, via Random Forest impurity bias, soaked up
+                # importance that belongs to the other features. Dropping them
+                # breaks that collinearity at negligible accuracy cost.
+                "average_density",
+                "density_variance",
                 # Performance features (sparse data, not intrinsic to chart)
                 "times_played",
                 "has_performance_data",
@@ -295,6 +302,51 @@ class BaselineModel:
         ).sort_values("importance", ascending=False)
 
         return feature_importance
+
+    def get_permutation_importance(
+        self,
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+        n_repeats: int = 10,
+        random_state: int = 42,
+    ) -> pd.DataFrame:
+        """
+        Get permutation feature importance on held-out data.
+
+        Unlike tree impurity importance, permutation importance measures each
+        feature's true contribution to test accuracy and is not biased toward
+        high-cardinality or one-of-several-collinear features. It works for any
+        estimator, so it is the honest measure to compare features by.
+
+        Args:
+            X_test: Test features (already scaled)
+            y_test: Test targets
+            n_repeats: Number of shuffles per feature
+            random_state: Random seed for reproducibility
+
+        Returns:
+            DataFrame with features, mean importance, and std, sorted descending.
+        """
+        if not self.trained:
+            raise ValueError("Model not trained!")
+
+        from sklearn.inspection import permutation_importance
+
+        result = permutation_importance(
+            self.model,
+            X_test,
+            y_test,
+            n_repeats=n_repeats,
+            random_state=random_state,
+            n_jobs=-1,
+        )
+        return pd.DataFrame(
+            {
+                "feature": self.feature_names,
+                "importance": result.importances_mean,
+                "importance_std": result.importances_std,
+            }
+        ).sort_values("importance", ascending=False)
 
     def save(self, save_dir: Path):
         """
