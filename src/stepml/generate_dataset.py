@@ -23,6 +23,7 @@ from stepml.features.feature_extractor import FeatureExtractor
 from stepml.parsers.universal_parser import parse_chart_file
 from stepml.utils import get_data_dir, get_stepml_root
 from stepml.utils.data_structures import ChartData, ScaleType
+from stepml.utils.ddrfreak_ratings import DDRFreakRatings
 from stepml.utils.ground_truth import GroundTruthOverrides
 from stepml.utils.performance_enrichment import PerformanceEnricher
 from stepml.utils.scale_detector import ScaleDetector
@@ -43,12 +44,19 @@ class DatasetGenerator:
         stats_file: Optional[Path] = None,
         target_scale: ScaleType = ScaleType.MODERN_DDR,
         ground_truth_file: Optional[Path] = None,
+        ddrfreak_mixes_file: Optional[Path] = None,
+        ddrfreak_ratings_file: Optional[Path] = None,
     ):
         self.songs_dir = Path(songs_dir)
         self.output_dir = Path(output_dir)
         self.target_scale = target_scale
         self.feature_extractor = FeatureExtractor()
         self.scale_detector = ScaleDetector()
+
+        # Authoritative classic-DDR ratings from DDRFreak (optional)
+        self.ddrfreak = None
+        if ddrfreak_mixes_file and ddrfreak_ratings_file:
+            self.ddrfreak = DDRFreakRatings(ddrfreak_mixes_file, ddrfreak_ratings_file)
 
         # Ground truth rating overrides (optional)
         self.ground_truth = None
@@ -303,6 +311,11 @@ class DatasetGenerator:
         # Create DataFrame
         df = pd.DataFrame(self.dataset_rows)
 
+        # Correct classic-DDR labels using authoritative DDRFreak ratings before
+        # ground-truth overrides, so manual overrides still take precedence.
+        if self.ddrfreak:
+            df = self.ddrfreak.apply(df, self.target_scale)
+
         # Apply ground truth overrides (adds ground_truth_rating column)
         if self.ground_truth:
             df = self.ground_truth.apply(df)
@@ -543,6 +556,23 @@ def main():
         help="Disable ground truth rating overrides",
     )
     parser.add_argument(
+        "--ddrfreak-mixes",
+        type=Path,
+        default=stepml_root / "ddrfreak_mixes.yaml",
+        help="Path to DDRFreak pack->mix mapping YAML (default: ddrfreak_mixes.yaml)",
+    )
+    parser.add_argument(
+        "--ddrfreak-ratings",
+        type=Path,
+        default=stepml_root / "ddrfreak_ratings.csv",
+        help="Path to scraped DDRFreak ratings CSV (default: ddrfreak_ratings.csv)",
+    )
+    parser.add_argument(
+        "--no-ddrfreak",
+        action="store_true",
+        help="Disable DDRFreak classic-rating corrections",
+    )
+    parser.add_argument(
         "--no-performance",
         action="store_true",
         help="Disable performance data enrichment",
@@ -596,9 +626,29 @@ def main():
                 f"Ground truth file not found at {gt_path} — continuing without overrides"
             )
 
+    # DDRFreak classic-rating corrections
+    ddrfreak_mixes_file = None
+    ddrfreak_ratings_file = None
+    if not args.no_ddrfreak:
+        if args.ddrfreak_mixes.exists() and args.ddrfreak_ratings.exists():
+            ddrfreak_mixes_file = args.ddrfreak_mixes
+            ddrfreak_ratings_file = args.ddrfreak_ratings
+        else:
+            logger.warning(
+                "DDRFreak files not found (%s / %s) — continuing without corrections",
+                args.ddrfreak_mixes,
+                args.ddrfreak_ratings,
+            )
+
     # Generate dataset
     generator = DatasetGenerator(
-        args.songs_dir, args.output_dir, stats_file, target_scale, ground_truth_file
+        args.songs_dir,
+        args.output_dir,
+        stats_file,
+        target_scale,
+        ground_truth_file,
+        ddrfreak_mixes_file,
+        ddrfreak_ratings_file,
     )
     df = generator.generate_dataset(verbose=args.verbose)
 

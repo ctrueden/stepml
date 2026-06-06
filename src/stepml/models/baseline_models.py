@@ -114,6 +114,8 @@ class BaselineModel:
                 "normalized_rating",
                 "ground_truth_rating",
                 "has_ground_truth",
+                "ddrfreak_rating",
+                "has_ddrfreak_rating",
                 "detected_scale",
                 "scale_confidence",
                 # Raw counts that conflate difficulty with song length;

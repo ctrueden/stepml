@@ -1,0 +1,43 @@
+# Mapping from local song-pack folder names to DDRFreak "mix" ids.
+#
+# DDRFreak (https://www.ddrfreak.com/versions/listver.php) publishes the
+# original, authoritative foot ratings for every classic DDR / Dancing Stage
+# arcade mix. Many local classic packs have been partially "modernized" --
+# some charts re-rated on the modern 1-20 scale, some left on the classic 1-10
+# scale -- which makes the in-file ratings an unreliable training label and
+# confuses scale detection. For the packs listed here we instead trust the
+# DDRFreak classic ratings (see bin/scrape-ddrfreak / ddrfreak_ratings.csv).
+#
+# Each entry maps an exact local pack directory name to the DDRFreak mix id
+# whose song list URL is:  https://www.ddrfreak.com/versions/songlist.php?mix=ID
+#
+# Only classic (1-10 scale) arcade mixes belong here. Do NOT add modern packs
+# (DDR X/A/20xx) or community/ITG packs -- their in-file ratings are correct.
+
+mixes:
+  "DDR 1st Mix": 40
+  "DDR 2nd Mix": 4
+  "DDR 2nd Mix LINK Version": 5
+  "DDR 3rd Mix": 7
+  "DDR 3rd Mix KOREA": 8
+  "DDR 3rd Mix KOREA2": 9
+  "DDR 3rd Mix PLUS": 11
+  "DDR 4th Mix": 12
+  "DDR 4th Mix PLUS": 20
+  "DDR 5th Mix": 28
+  "DDR 6th Mix MAX": 72
+  "DDR 7th Mix MAX2": 75
+  "DDR EXTREME": 80
+  "DDR Extreme 2": 183
+  "DDR Supernova": 235
+  # DDR SuperNOVA2 (mix 238) is not hosted on DDRFreak ("not available"), so it
+  # has no authoritative ratings to import.
+  "DDR Solo 2000": 30
+  "DDR Solo BASSMIX": 29
+  "DS 1.5": 125
+  "DS EuroMIX": 35
+  "DS EuroMIX2": 78
+  "DS feat. Disney's Rave": 33
+  "DS feat. Dreams Come True": 37
+  "DS feat. True Kiss Destination": 36
+  "DS Fusion": 182
