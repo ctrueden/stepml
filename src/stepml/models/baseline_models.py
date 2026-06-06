@@ -440,6 +440,28 @@ class LinearRegressionModel(BaselineModel):
 class RandomForestModel(BaselineModel):
     """Random forest regression model."""
 
+    # Features for which difficulty must be monotonically non-decreasing:
+    # all else equal, more notes, faster tempo, and more lateral/footwork
+    # movement never make a chart easier. Enforcing this stops the forest from
+    # learning physically nonsensical dips (e.g. higher peak_density predicting a
+    # lower rating) from label noise, and guarantees two charts that differ only
+    # by being denser/faster are ordered correctly.
+    MONOTONIC_INCREASING = frozenset(
+        {
+            "notes_per_second",
+            "peak_density",
+            "com_velocity_mean",
+            "com_velocity_peak",
+            "com_direction_changes",
+            "cross_pad_rate",
+            "crossover_rate",
+            "facing_changes_per_beat",
+            "stream_nps",
+            "stream_fraction",
+            "max_run_seconds",
+        }
+    )
+
     def __init__(
         self,
         n_estimators: int = 300,
@@ -459,3 +481,23 @@ class RandomForestModel(BaselineModel):
             random_state=random_state,
             n_jobs=-1,  # Use all CPU cores
         )
+
+    def train(self, X_train: np.ndarray, y_train: np.ndarray, cv_folds: int = 5):
+        """Apply monotonic constraints (in feature order) then train."""
+        # monotonic_cst must align with the feature column order, which is only
+        # known after load_dataset has populated feature_names. StandardScaler
+        # scales each feature by a positive std and centers it, both of which
+        # preserve per-feature ordering, so a +1 constraint stays +1 after
+        # scaling.
+        if self.feature_names is not None:
+            constraints = [
+                1 if name in self.MONOTONIC_INCREASING else 0
+                for name in self.feature_names
+            ]
+            if any(constraints):
+                self.model.set_params(monotonic_cst=constraints)
+                n = sum(constraints)
+                logger.info(
+                    f"  Applied monotonic-increasing constraint to {n} feature(s)"
+                )
+        super().train(X_train, y_train, cv_folds=cv_folds)
