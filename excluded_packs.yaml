@@ -1,0 +1,15 @@
+# Packs excluded from the dataset
+#
+# Charts in these packs are skipped entirely during dataset generation: they
+# are neither used for training nor given calculated ratings.
+#
+# Fields:
+#   pack  – pack directory name under Songs/ (case-insensitive exact match)
+#   note  – optional free-text explanation
+
+packs:
+
+  - pack: "New GPT Edits"
+    note: >
+      Machine-generated edits (some over 20,000 notes);
+      not in need of scale adjustment, and excluded for performance reasons.

@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
+import yaml
 
 from stepml.features.feature_extractor import FeatureExtractor
 from stepml.parsers.universal_parser import parse_chart_file
@@ -46,12 +47,23 @@ class DatasetGenerator:
         ground_truth_file: Optional[Path] = None,
         ddrfreak_mixes_file: Optional[Path] = None,
         ddrfreak_ratings_file: Optional[Path] = None,
+        exclusions_file: Optional[Path] = None,
     ):
         self.songs_dir = Path(songs_dir)
         self.output_dir = Path(output_dir)
         self.target_scale = target_scale
         self.feature_extractor = FeatureExtractor()
         self.scale_detector = ScaleDetector()
+
+        # Pack directories to skip entirely (optional)
+        self.excluded_packs = set()
+        if exclusions_file and exclusions_file.exists():
+            with open(exclusions_file) as f:
+                entries = (yaml.safe_load(f) or {}).get("packs", [])
+            self.excluded_packs = {e["pack"].lower() for e in entries}
+            logger.info(
+                f"Excluding {len(self.excluded_packs)} pack(s) from {exclusions_file}"
+            )
 
         # Authoritative classic-DDR ratings from DDRFreak (optional)
         self.ddrfreak = None
@@ -90,6 +102,14 @@ class DatasetGenerator:
         # Output data
         self.dataset_rows = []
 
+    def _is_excluded(self, chart_file: Path) -> bool:
+        """Whether a chart file lies in an excluded pack directory."""
+        try:
+            pack = chart_file.relative_to(self.songs_dir).parts[0]
+        except (ValueError, IndexError):
+            return False
+        return pack.lower() in self.excluded_packs
+
     def find_chart_files(self) -> List[Path]:
         """
         Find all chart files in the songs directory.
@@ -121,7 +141,12 @@ class DatasetGenerator:
                 if song_dir_key not in song_dirs:
                     song_dirs[song_dir_key] = file_path
 
-        chart_files = list(song_dirs.values())
+        chart_files = [
+            path for path in song_dirs.values() if not self._is_excluded(path)
+        ]
+        n_excluded = len(song_dirs) - len(chart_files)
+        if n_excluded:
+            logger.info(f"  Skipped {n_excluded} song(s) in excluded packs")
 
         # Log findings
         format_counts = {}
@@ -318,7 +343,7 @@ class DatasetGenerator:
 
         # Apply ground truth overrides (adds ground_truth_rating column)
         if self.ground_truth:
-            df = self.ground_truth.apply(df)
+            df = self.ground_truth.apply(df, self.target_scale)
         else:
             df["ground_truth_rating"] = df["normalized_rating"]
             df["has_ground_truth"] = False
@@ -568,6 +593,12 @@ def main():
         help="Path to scraped DDRFreak ratings CSV (default: ddrfreak_ratings.csv)",
     )
     parser.add_argument(
+        "--exclusions",
+        type=Path,
+        default=stepml_root / "excluded_packs.yaml",
+        help="Path to excluded packs YAML (default: excluded_packs.yaml)",
+    )
+    parser.add_argument(
         "--no-ddrfreak",
         action="store_true",
         help="Disable DDRFreak classic-rating corrections",
@@ -649,6 +680,7 @@ def main():
         ground_truth_file,
         ddrfreak_mixes_file,
         ddrfreak_ratings_file,
+        args.exclusions,
     )
     df = generator.generate_dataset(verbose=args.verbose)
 

@@ -1,0 +1,162 @@
+# Anchor charts: felt difficulty from actual play, used to evaluate the model
+#
+# Unlike ground_truth_ratings.yaml, these are NOT training labels. They are a
+# regression harness: `uv run check-anchors` prints each chart's calculated
+# rating next to how it felt, so feature/model changes can be judged against
+# lived experience rather than aggregate MAE alone.
+#
+# Fields:
+#   song         – "Pack/Folder", as in a StepMania course (#SONG:Pack/Folder)
+#   chart_type   – dance-single | dance-double
+#   difficulty   – Beginner | Easy | Medium | Hard | Challenge
+#   min, max     – felt rating range on the modern_ddr scale (either optional)
+#   harder_than  – optional list of "Pack/Folder:Difficulty" (same chart_type)
+#                  that this chart must out-rate
+#   note         – optional free text
+
+anchors:
+
+  # --- Double ---
+
+  - song: "DDR X/TRIP MACHINE(X-Special)"
+    chart_type: dance-double
+    difficulty: Challenge
+    min: 11.75
+    max: 12.25
+    note: Way too tricky and crossovery to be a 10-11.
+
+  - song: "ITG 2/Sunshine"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 13.0
+    max: 14.0
+    note: Many repeated fast crossovers between pads.
+
+  - song: "DDR X/CANDY(X-Special)"
+    chart_type: dance-double
+    difficulty: Challenge
+    min: 13.0
+    max: 13.5
+
+  - song: "DDR 5th Mix/Radical Faith"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 9.75
+    max: 10.25
+
+  - song: "DDR 2014/Pa pi pu Yeah!"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 12.75
+    max: 13.25
+
+  - song: "DDR 2014/Idola"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 12.25
+    harder_than:
+      - "DDR 2013/Zutto Mitsu Meteite (Ryu Remix):Hard"
+      - "DDR 6th Mix MAX/HIGHS OFF U (Scorccio XY Mix):Hard"
+      - "DDR A3/Fleur:Medium"
+    note: Faster, with sustained runs across both pads.
+
+  - song: "DDR 2014/Squeeze"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 11.0
+    max: 11.5
+
+  - song: "DDR A3/Chromatic Burst"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 11.0
+    max: 11.5
+
+  - song: "ITG 3/Sundance"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 9.75
+    max: 10.25
+
+  - song: "DDR A3/Acid,Tribal & Dance (DDR EDITION)"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 12.0
+    max: 12.5
+
+  - song: "DDR A20/Sweets wa tomaranai"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 13.0
+    max: 13.3
+    note: Fast (>200 BPM). Low-end 13; the official 13 is right.
+
+  - song: "DDR A20/The World Ends Now"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 13.0
+    max: 13.3
+    note: Fast; comparable pace to AFRONOVA double Hard, which is harder.
+
+  - song: "DDR 3rd Mix/AFRONOVA"
+    chart_type: dance-double
+    difficulty: Hard
+    harder_than:
+      - "DDR A20/The World Ends Now:Medium"
+
+  - song: "ITG Rebirth 2 (Beta)/I Justified"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 11.75
+    max: 12.25
+    note: >
+      Tricky and fast (triplets at ~160); comparable in pace and style to
+      BURNING HEAT! (3 Option MIX) double Hard.
+
+  - song: "DDR A3/PERSIAN LAND"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 11.75
+    max: 12.25
+
+  - song: "DDR SuperNOVA2/Feelings Won't Fade(Extend Trance Mix)"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 13.0
+
+  - song: "ITG 2/Hillbilly Hardcore"
+    chart_type: dance-double
+    difficulty: Hard
+    max: 12.5
+
+  - song: "ITG Rebirth/Sail AwaY"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 14.0
+
+  - song: "DDR 2014/M.A.Y.U"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 13.0
+    max: 13.75
+
+  - song: "ITG Rebirth 2 (Beta)/Abaddon"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 13.25
+    max: 13.75
+    note: >
+      Tempo changes and speed like Sakura (DDR EXTREME, modern 13). Left me
+      winded and gripping the bar at "warmup" level.
+
+  - song: "DDR Supernova/Try 2 Luv. U"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 9.5
+    max: 10.0
+
+  - song: "DDR 2013/Spanish Snowy Dance"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 12.0
+    max: 12.3

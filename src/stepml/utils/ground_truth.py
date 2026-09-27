@@ -10,8 +10,12 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 import yaml
+
+from stepml.utils.data_structures import ScaleType
+from stepml.utils.rating_normalizer import RatingNormalizer
 
 logger = logging.getLogger(__name__)
 
@@ -31,30 +35,62 @@ class GroundTruthOverrides:
         with open(self.path) as f:
             data = yaml.safe_load(f)
         self.overrides = (data or {}).get("overrides", [])
+        self.pack_weights = (data or {}).get("pack_weights", [])
         logger.info(
             f"Loaded {len(self.overrides)} ground truth override(s) from {self.path}"
         )
 
-    def apply(self, df: pd.DataFrame) -> pd.DataFrame:
+    @staticmethod
+    def _from_modern(rating: float, target_scale: ScaleType) -> float:
+        """Convert a modern_ddr rating to the target scale, interpolating."""
+        tables = {
+            ScaleType.CLASSIC_DDR: RatingNormalizer.UNIFIED_TO_CLASSIC_DDR,
+            ScaleType.ITG: RatingNormalizer.UNIFIED_TO_ITG,
+        }
+        if target_scale not in tables:
+            return rating
+        table = sorted(tables[target_scale].items())
+        return float(np.interp(rating, [u for u, _ in table], [t for _, t in table]))
+
+    def apply(
+        self, df: pd.DataFrame, target_scale: ScaleType = ScaleType.MODERN_DDR
+    ) -> pd.DataFrame:
         """
         Return a copy of df with ground_truth_rating and has_ground_truth columns.
 
         ground_truth_rating defaults to normalized_rating; overridden rows get
-        the value from the YAML file.  has_ground_truth is True only for those
-        rows so the training pipeline can report or weight them differently.
+        the value from the YAML file (given on the modern_ddr scale, converted
+        to target_scale).  has_ground_truth is True only for those rows so the
+        training pipeline can report or weight them differently.
         """
         df = df.copy()
         df["ground_truth_rating"] = df["normalized_rating"]
         df["has_ground_truth"] = False
+        df["label_weight"] = 1.0
+
+        for entry in self.pack_weights:
+            mask = df["pack_name"].str.lower() == entry["pack"].lower()
+            df.loc[mask, "label_weight"] = float(entry["weight"])
+            logger.info(
+                "  Pack weight: %-40s ×%.1f  (%d rows)",
+                repr(entry["pack"]),
+                float(entry["weight"]),
+                int(mask.sum()),
+            )
 
         for override in self.overrides:
-            title = override["title"]
+            song = override.get("song")
+            title = override.get("title") or song
             chart_type = override.get("chart_type", "all")
             difficulty = override.get("difficulty", "all")
             pack = override.get("pack")
-            rating = float(override["rating"])
+            rating = self._from_modern(float(override["rating"]), target_scale)
 
-            mask = df["title"].str.lower() == title.lower()
+            if song:
+                # file_path looks like "Songs/<Pack>/<Folder>/<file>.sm".
+                mask = df["file_path"].str.contains(f"/{song}/", regex=False)
+            else:
+                mask = df["title"].str.lower() == title.lower()
 
             if pack:
                 mask &= df["pack_name"].str.lower().str.contains(pack.lower(), na=False)

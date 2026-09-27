@@ -31,6 +31,9 @@ class BaselineModel:
     training, evaluation, and persistence.
     """
 
+    # Sample weight of a row whose label is a manual ground-truth override.
+    GROUND_TRUTH_WEIGHT = 10.0
+
     def __init__(self, model_name: str):
         """
         Initialize baseline model.
@@ -45,6 +48,11 @@ class BaselineModel:
         # ground_truth_rating is normalized_rating for most rows, with manual
         # overrides applied for songs where normalized_rating is known to be wrong.
         self.target_column = "ground_truth_rating"
+        # Per-row sample weights and "always train on this row" flags, aligned
+        # to the dataset index (set by load_dataset).
+        self.sample_weight: Optional[pd.Series] = None
+        self.pinned: Optional[pd.Series] = None
+        self.train_weight: Optional[np.ndarray] = None
 
         # Training metadata
         self.trained = False
@@ -114,6 +122,7 @@ class BaselineModel:
                 "normalized_rating",
                 "ground_truth_rating",
                 "has_ground_truth",
+                "label_weight",
                 "ddrfreak_rating",
                 "has_ddrfreak_rating",
                 "detected_scale",
@@ -163,6 +172,21 @@ class BaselineModel:
         X = X[mask]
         y = y[mask]
 
+        # Human-verified labels are few (dozens among ~20k charts) and each
+        # one sits in a leaf with other charts, so at weight 1 an override
+        # barely moves the model. Up-weight them, and pin them to the training
+        # split so a random test split never discards one.
+        # Packs whose labels are trusted as near-canonical carry a
+        # label_weight above 1 as well.
+        if "has_ground_truth" in df.columns:
+            self.pinned = df.loc[X.index, "has_ground_truth"].astype(bool)
+            base = (
+                df.loc[X.index, "label_weight"]
+                if "label_weight" in df.columns
+                else pd.Series(1.0, index=X.index)
+            )
+            self.sample_weight = base.where(~self.pinned, self.GROUND_TRUTH_WEIGHT)
+
         logger.info(f"  Final dataset: {len(X)} rows, {len(X.columns)} features")
         logger.info(f"  Target range: {y.min():.1f} - {y.max():.1f}")
         logger.info(f"  Target mean: {y.mean():.2f} ± {y.std():.2f}")
@@ -188,10 +212,17 @@ class BaselineModel:
         Returns:
             (X_train, X_test, y_train, y_test) tuple
         """
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state
+        # Split data (pinned rows always go to training)
+        pinned = (
+            self.pinned if self.pinned is not None else pd.Series(False, index=X.index)
         )
+        X_train, X_test, y_train, y_test = train_test_split(
+            X[~pinned], y[~pinned], test_size=test_size, random_state=random_state
+        )
+        X_train = pd.concat([X_train, X[pinned]])
+        y_train = pd.concat([y_train, y[pinned]])
+        if self.sample_weight is not None:
+            self.train_weight = self.sample_weight.loc[X_train.index].to_numpy()
 
         logger.info("Data split:")
         logger.info(f"  Training: {len(X_train)} samples")
@@ -218,7 +249,11 @@ class BaselineModel:
         logger.info(f"\nTraining {self.model_name}...")
 
         # Train model
-        self.model.fit(X_train, y_train)
+        weight = self.train_weight
+        if weight is not None and len(weight) != len(y_train):
+            weight = None  # not the split prepare_data produced
+        fit_params = {} if weight is None else {"sample_weight": weight}
+        self.model.fit(X_train, y_train, **fit_params)
 
         # Training score
         self.train_score = self.model.score(X_train, y_train)
@@ -227,7 +262,7 @@ class BaselineModel:
         # Cross-validation
         logger.info(f"  Running {cv_folds}-fold cross-validation...")
         self.cv_scores = cross_val_score(
-            self.model, X_train, y_train, cv=cv_folds, scoring="r2"
+            self.model, X_train, y_train, cv=cv_folds, scoring="r2", params=fit_params
         )
         logger.info(f"  CV R² scores: {self.cv_scores}")
         logger.info(
@@ -452,12 +487,15 @@ class RandomForestModel(BaselineModel):
         {
             "notes_per_second",
             "peak_density",
-            "com_velocity_mean",
-            "com_velocity_peak",
-            "com_direction_changes",
-            "cross_pad_rate",
-            "crossover_rate",
-            "facing_changes_per_beat",
+            "sustained_nps",
+            "body_speed_mean",
+            "body_speed_peak",
+            "body_speed_sustained",
+            "weight_shifts_per_second",
+            "pad_shifts_per_second",
+            "foot_speed_mean",
+            "foot_speed_peak",
+            "crossovers_per_second",
             "stream_nps",
             "stream_fraction",
             "max_run_seconds",

@@ -175,17 +175,27 @@ class FeatureSet:
     file_format: str = ""
     has_advanced_timing: bool = False
 
-    # Spatial / center-of-mass features
-    com_lateral_range: float = 0.0
-    com_velocity_mean: float = 0.0
-    com_velocity_peak: float = 0.0
-    com_velocity_std: float = 0.0
-    com_direction_changes: float = 0.0
-    cross_pad_rate: float = 0.0
-
-    # Facing / footwork features
-    crossover_rate: float = 0.0
-    facing_changes_per_beat: float = 0.0
+    # Footwork / weight-shift features, from a simulated foot path (see
+    # features/footwork.py). Lateral positions are in panel widths.
+    # body_speed_*: lateral travel of the body's weight centre (the feet's
+    #   midpoint, low-pass filtered since weight lags footwork) per second —
+    #   over the whole chart, the busiest 4 s, and the busiest 30 s. Small on
+    #   single, large on double pad-to-pad play.
+    body_speed_mean: float = 0.0
+    body_speed_peak: float = 0.0
+    body_speed_sustained: float = 0.0
+    # weight_shifts_per_second: back-and-forth swings of ≥ 1 panel.
+    weight_shifts_per_second: float = 0.0
+    # pad_shifts_per_second: swings of ≥ 2 panels (across onto the other pad).
+    pad_shifts_per_second: float = 0.0
+    # body_lateral_range: 5th–95th percentile span of the weight centre.
+    body_lateral_range: float = 0.0
+    # foot_speed_*: distance travelled by both feet per second — over the
+    #   whole chart and the busiest 4 s. Fast pad-to-pad footwork scores high.
+    foot_speed_mean: float = 0.0
+    foot_speed_peak: float = 0.0
+    # crossovers_per_second: times the simulated feet enter a crossed stance.
+    crossovers_per_second: float = 0.0
 
     # Rhythm variability
     note_interval_std: float = 0.0
@@ -200,12 +210,12 @@ class FeatureSet:
     #   the foot is already in position for these taps.
     same_col_repeat_ratio: float = 0.0
     # stream_ratio: fraction of notes that are interior to a sustained fast run
-    #   (both the preceding AND following interval are ≤ 16th note, ≤ 0.25 beats,
+    #   (both the preceding AND following gaps are ≤ 0.18 s,
     #   and the note does NOT share a column with its neighbours).
     #   Genuinely hard — no free taps, foot must travel each step.
     stream_ratio: float = 0.0
 
-    # Stamina features (12th-note / triplet threshold: gap ≤ 1/3 beat)
+    # Stamina features ("dense" = steps ≤ 0.18 s apart, ~5.5+ steps/second)
     # max_run_seconds: duration of the longest single continuous dense run.
     #   Captures the peak sustained effort required without recovery.
     max_run_seconds: float = 0.0
@@ -219,6 +229,8 @@ class FeatureSet:
     #   stream_nps=9.5 (triplets at 170 BPM) is much harder than one with
     #   NPS=6 and stream_nps=6.5 (widely-spaced 8th notes with brief bursts).
     stream_nps: float = 0.0
+    # sustained_nps: step rows per second over the busiest 30 seconds.
+    sustained_nps: float = 0.0
 
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary for ML models."""

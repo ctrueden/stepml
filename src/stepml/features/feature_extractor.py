@@ -6,9 +6,10 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
+from stepml.features import footwork
+from stepml.features.timing import TimingMap
 from stepml.utils.data_structures import (
     ChartData,
-    ChartType,
     FeatureSet,
     NoteData,
 )
@@ -50,34 +51,43 @@ class FeatureExtractor:
             or len(chart_data.warps) > 0
         )
 
+        # Real elapsed time of every step row (mine-only rows excluded), so
+        # that speed features follow the chart's local tempo through BPM
+        # changes and stops rather than a single chart-wide average.
+        timing = TimingMap(chart_data)
+        steps = [
+            (beat, pattern)
+            for beat, pattern in sorted(note_data.note_positions, key=lambda x: x[0])
+            if any(c in "124" for c in pattern)
+        ]
+        step_times = timing.seconds([beat for beat, _ in steps])
+
         # Extract timing-based features
-        self._extract_timing_features(chart_data, note_data, features)
+        self._extract_timing_features(chart_data, note_data, features, timing)
 
         # Extract pattern-based features
         self._extract_pattern_features(note_data, features)
 
         # Extract density features
-        self._extract_density_features(chart_data, note_data, features)
+        self._extract_density_features(note_data, features, timing, steps)
 
-        # Extract technical features
-        self._extract_technical_features(chart_data, note_data, features)
-
-        # Extract spatial / COM features
-        self._extract_spatial_features(chart_data, note_data, features)
-
-        # Extract facing / footwork features
-        self._extract_facing_features(note_data, features)
+        # Extract footwork / weight-shift features
+        self._extract_footwork_features(note_data, features, steps, step_times)
 
         # Extract rhythm variability features
-        self._extract_rhythm_features(note_data, features)
+        self._extract_rhythm_features(note_data, features, steps, step_times)
 
         # Extract stamina features
-        self._extract_stamina_features(note_data, features)
+        self._extract_stamina_features(features, step_times)
 
         return features
 
     def _extract_timing_features(
-        self, chart_data: ChartData, note_data: NoteData, features: FeatureSet
+        self,
+        chart_data: ChartData,
+        note_data: NoteData,
+        features: FeatureSet,
+        timing: TimingMap,
     ):
         """Extract timing-related features."""
         # BPM analysis
@@ -98,10 +108,11 @@ class FeatureExtractor:
         if note_data.note_positions:
             features.chart_length_beats = note_data.note_positions[-1][0]
 
-            # Calculate time in seconds using BPM
-            features.chart_length_seconds = self._calculate_chart_duration(
-                chart_data, features.chart_length_beats
-            )
+            # Calculate time in seconds using BPM changes and stops
+            if timing.valid:
+                features.chart_length_seconds = float(
+                    timing.seconds(features.chart_length_beats)
+                )
 
     def _extract_pattern_features(self, note_data: NoteData, features: FeatureSet):
         """Extract pattern complexity features."""
@@ -114,11 +125,18 @@ class FeatureExtractor:
         features.roll_ratio = note_data.roll_notes / note_data.total_notes
         features.mine_ratio = note_data.mine_notes / note_data.total_notes
 
+    # Width of the sliding windows used for sustained-effort features.
+    _SUSTAINED_WINDOW = 30.0  # seconds
+
     def _extract_density_features(
-        self, chart_data: ChartData, note_data: NoteData, features: FeatureSet
+        self,
+        note_data: NoteData,
+        features: FeatureSet,
+        timing: TimingMap,
+        steps: List[Tuple[float, str]],
     ):
         """Extract note density features."""
-        if features.chart_length_seconds <= 0 or not note_data.note_positions:
+        if features.chart_length_seconds <= 0 or not steps:
             return
 
         # Overall density
@@ -127,117 +145,22 @@ class FeatureExtractor:
         )
         features.average_density = note_data.total_notes / features.chart_length_beats
 
-        # Calculate peak density using sliding window.
-        # The window is measured in beats (8 beats = 2 measures, a musically
-        # meaningful span) but the result is converted to notes/second so that
-        # tempo is captured: a dense 2-measure burst at 180 BPM is far harder
-        # than the same notes-per-beat at 115 BPM.  Without this conversion the
-        # feature is tempo-blind and two charts with similar notes/beat but very
-        # different BPM collapse to the same difficulty.
+        # Peak density: step rows per second in the busiest 8-beat (2-measure)
+        # window. Each window is timed at the tempo in effect there, so a dense
+        # burst in a fast section of a chart with BPM changes counts at full
+        # speed rather than being diluted by the chart's average tempo.
         window_size = 8.0  # 8 beats (2 measures)
-        peak_density_per_beat = self._calculate_peak_density(
-            note_data.note_positions, window_size
-        )
-        beats_per_second = features.chart_length_beats / features.chart_length_seconds
-        features.peak_density = peak_density_per_beat * beats_per_second
+        beats = np.array([beat for beat, _ in steps])
+        ends = np.searchsorted(beats, beats + window_size, side="left")
+        spans = timing.seconds(beats + window_size) - timing.seconds(beats)
+        spans = np.maximum(spans, 1e-3)
+        features.peak_density = float(np.max((ends - np.arange(len(beats))) / spans))
 
         # Calculate density variance
         density_variance = self._calculate_density_variance(
             note_data.note_positions, window_size
         )
         features.density_variance = density_variance
-
-    def _extract_technical_features(
-        self, chart_data: ChartData, note_data: NoteData, features: FeatureSet
-    ):
-        """Extract technical difficulty features."""
-        # These are handled in the basic extraction above
-        # Can be extended with more complex analysis like:
-        # - Crossover detection
-        # - Stream detection
-        # - Footwork complexity
-        # - Direction change analysis
-        pass
-
-    def _calculate_chart_duration(
-        self, chart_data: ChartData, total_beats: float
-    ) -> float:
-        """
-        Calculate chart duration in seconds accounting for BPM changes.
-
-        Args:
-            chart_data: Chart with BPM information
-            total_beats: Total number of beats in the chart
-
-        Returns:
-            Duration in seconds
-        """
-        if not chart_data.bpms:
-            return 0.0
-
-        total_seconds = 0.0
-
-        # Sort BPM changes by beat
-        bpm_changes = sorted(chart_data.bpms, key=lambda x: x.beat)
-
-        for i, bpm_change in enumerate(bpm_changes):
-            # Get the beat range for this BPM
-            start_beat = bpm_change.beat
-            if i + 1 < len(bpm_changes):
-                end_beat = min(bpm_changes[i + 1].beat, total_beats)
-            else:
-                end_beat = total_beats
-
-            # Calculate duration for this BPM section
-            beats_in_section = end_beat - start_beat
-            if beats_in_section > 0 and bpm_change.value > 0:
-                # Time = beats / (BPM / 60)
-                seconds_in_section = (beats_in_section * 60.0) / bpm_change.value
-                total_seconds += seconds_in_section
-
-            if end_beat >= total_beats:
-                break
-
-        return total_seconds
-
-    def _calculate_peak_density(
-        self, note_positions: List[Tuple[float, str]], window_size: float
-    ) -> float:
-        """
-        Calculate peak note density using a sliding window.
-
-        Args:
-            note_positions: List of (beat, note_pattern) tuples
-            window_size: Size of the sliding window in beats
-
-        Returns:
-            Maximum notes per beat in any window
-        """
-        if not note_positions:
-            return 0.0
-
-        max_density = 0.0
-
-        # Sort by beat position
-        sorted_positions = sorted(note_positions, key=lambda x: x[0])
-
-        # Sliding window
-        for i, (beat, _) in enumerate(sorted_positions):
-            window_end = beat + window_size
-            notes_in_window = 0
-
-            # Count notes in window
-            for j in range(i, len(sorted_positions)):
-                if sorted_positions[j][0] < window_end:
-                    notes_in_window += 1
-                else:
-                    break
-
-            # Calculate density for this window
-            density = notes_in_window / window_size
-            max_density = max(max_density, density)
-
-        return max_density
 
     def _calculate_density_variance(
         self, note_positions: List[Tuple[float, str]], window_size: float
@@ -255,183 +178,117 @@ class FeatureExtractor:
         if len(note_positions) < 2:
             return 0.0
 
-        densities = []
-        sorted_positions = sorted(note_positions, key=lambda x: x[0])
+        # Count notes in consecutive non-overlapping windows from beat 0
+        # (notes past the last whole window are not counted).
+        beats = np.array([beat for beat, _ in note_positions])
+        num_windows = max(int(beats.max() / window_size), 1)
+        window_idx = np.floor(beats / window_size).astype(int)
+        window_idx = window_idx[(window_idx >= 0) & (window_idx < num_windows)]
+        counts = np.bincount(window_idx, minlength=num_windows)
+        return float(np.var(counts / window_size))
 
-        # Calculate density for multiple windows
-        total_beats = sorted_positions[-1][0]
-        num_windows = max(int(total_beats / window_size), 1)
+    # Weight shifts must move the body at least this far (panels) before
+    # reversing to count; smaller wobbles are ordinary stepping in place.
+    _SHIFT_MIN = 1.0
+    # A shift this large means hauling the body across onto the other pad.
+    _PAD_SHIFT_MIN = 2.0
+    # Short window for peak lateral effort.
+    _BURST_WINDOW = 4.0  # seconds
 
-        for window_idx in range(num_windows):
-            window_start = window_idx * window_size
-            window_end = window_start + window_size
-
-            notes_in_window = sum(
-                1 for beat, _ in sorted_positions if window_start <= beat < window_end
-            )
-
-            density = notes_in_window / window_size
-            densities.append(density)
-
-        return float(np.var(densities)) if densities else 0.0
-
-    # ------------------------------------------------------------------ #
-    # x-position lookup tables (lateral only; Up/Down share centre x)    #
-    # ------------------------------------------------------------------ #
-    _SINGLE_X = [-1.0, 0.0, 0.0, 1.0]  # L  D  U  R
-    # Double: left pad centred at -2, right pad at +2, 2-unit gap between them
-    _DOUBLE_X = [
-        -3.0,
-        -2.0,
-        -2.0,
-        -1.0,  # Left pad:  L  D  U  R
-        1.0,
-        2.0,
-        2.0,
-        3.0,
-    ]  # Right pad: L  D  U  R
-
-    def _col_x(self, note_data: NoteData) -> List[float]:
-        return (
-            self._DOUBLE_X
-            if note_data.chart_type == ChartType.DOUBLE
-            else self._SINGLE_X
-        )
-
-    def _windowed_peak(
-        self, values: np.ndarray, beats: np.ndarray, window_beats: float
-    ) -> float:
-        """Mean of values in the busiest window of width window_beats."""
-        if len(values) == 0:
-            return 0.0
-        peak = 0.0
-        for i in range(len(beats)):
-            mask = (beats >= beats[i]) & (beats < beats[i] + window_beats)
-            if mask.any():
-                peak = max(peak, float(np.mean(values[mask])))
-        return peak
-
-    def _extract_spatial_features(
-        self, chart_data: ChartData, note_data: NoteData, features: FeatureSet
+    def _extract_footwork_features(
+        self,
+        note_data: NoteData,
+        features: FeatureSet,
+        steps: List[Tuple[float, str]],
+        step_times: np.ndarray,
     ):
-        """Center-of-mass position, velocity, and cross-pad statistics."""
-        x_pos = self._col_x(note_data)
-        coms: List[float] = []
-        beats: List[float] = []
-
-        for beat, pattern in note_data.note_positions:
-            active = [i for i, c in enumerate(pattern) if c in "124" and i < len(x_pos)]
-            if active:
-                coms.append(float(np.mean([x_pos[i] for i in active])))
-                beats.append(beat)
-
-        if len(coms) < 2:
+        """Weight-shift and crossover features from a simulated foot path."""
+        duration = features.chart_length_seconds
+        if duration <= 0 or len(steps) < 2:
+            return
+        path = footwork.simulate(note_data.chart_type, steps, step_times)
+        if path is None:
             return
 
-        coms_arr = np.array(coms)
-        beats_arr = np.array(beats)
-        dbeats = np.diff(beats_arr)
-        dbeats = np.where(dbeats > 0, dbeats, 1e-6)
-        delta = np.diff(coms_arr)
-        # velocity in beats domain; convert to units/second via BPM
-        velocity_per_beat = np.abs(delta) / dbeats
-        bpm = chart_data.get_primary_bpm()
-        bps = bpm / 60.0 if bpm > 0 else 1.0
-        velocity = velocity_per_beat * bps
+        body = path.body_x
+        travel = np.concatenate([[0.0], np.cumsum(np.abs(np.diff(body)))])
+        features.body_speed_mean = float(travel[-1] / duration)
+        features.body_speed_peak = self._windowed_rate(
+            travel, path.times, self._BURST_WINDOW
+        )
+        features.body_speed_sustained = self._windowed_rate(
+            travel, path.times, self._SUSTAINED_WINDOW
+        )
+        features.weight_shifts_per_second = (
+            self._count_swings(body, self._SHIFT_MIN) / duration
+        )
+        features.pad_shifts_per_second = (
+            self._count_swings(body, self._PAD_SHIFT_MIN) / duration
+        )
+        lo, hi = np.percentile(body, [5, 95])
+        features.body_lateral_range = float(hi - lo)
 
-        features.com_lateral_range = float(coms_arr.max() - coms_arr.min())
-        features.com_velocity_mean = float(velocity.mean())
-        features.com_velocity_peak = self._windowed_peak(velocity, beats_arr[1:], 8.0)
-        features.com_velocity_std = float(velocity.std())
-
-        # Direction changes normalized to per-beat rate
-        raw_direction_changes = int(np.sum(np.diff(np.sign(delta)) != 0))
-        features.com_direction_changes = (
-            raw_direction_changes / features.chart_length_beats
-            if features.chart_length_beats > 0
-            else 0.0
+        foot = np.cumsum(path.foot_travel)
+        features.foot_speed_mean = float(foot[-1] / duration)
+        features.foot_speed_peak = self._windowed_rate(
+            foot, path.times, self._BURST_WINDOW
         )
 
-        # Cross-pad rate: times COM crosses x=0 (pad boundary) per beat
-        sign_changes = int(np.sum(np.diff(np.sign(coms_arr)) != 0))
-        features.cross_pad_rate = (
-            sign_changes / features.chart_length_beats
-            if features.chart_length_beats > 0
-            else 0.0
-        )
+        crossed = path.crossed
+        entered = int(crossed[0]) + int(np.sum(crossed[1:] & ~crossed[:-1]))
+        features.crossovers_per_second = entered / duration
 
-    def _count_crossovers_with_start(
-        self, xs: List[float], start_foot: int
-    ) -> Tuple[int, int]:
-        """
-        Simulate alternating footwork starting with the given foot (0=LF, 1=RF).
+    @staticmethod
+    def _windowed_rate(cumulative: np.ndarray, times: np.ndarray, window: float):
+        """Peak increase of a cumulative quantity per second over a window."""
+        ends = np.searchsorted(times, times + window, side="right") - 1
+        return float(np.max(cumulative[ends] - cumulative) / window)
 
-        Returns (crossover_count, facing_change_count).  A crossover is any
-        step where the moving foot lands on the wrong side of the standing foot.
-        """
-        foot_x = [-1.0, 1.0]  # [LF_x, RF_x] — reasonable starting positions
-        facing = 1  # +1 forward (RF >= LF), -1 crossed
-        foot_idx = start_foot
-        crossovers = 0
-        facing_changes = 0
+    @staticmethod
+    def _count_swings(x: np.ndarray, amplitude: float) -> int:
+        """Count monotone legs of at least `amplitude` (zigzag with hysteresis)."""
+        swings = 0
+        direction = 0
+        lo = hi = extreme = x[0]
+        for v in x[1:]:
+            if direction == 0:
+                lo, hi = min(lo, v), max(hi, v)
+                if v - lo >= amplitude:
+                    direction, extreme, swings = 1, v, 1
+                elif hi - v >= amplitude:
+                    direction, extreme, swings = -1, v, 1
+            elif direction * (v - extreme) > 0:
+                extreme = v
+            elif abs(v - extreme) >= amplitude:
+                direction, extreme = -direction, v
+                swings += 1
+        return swings
 
-        for x in xs:
-            other = 1 - foot_idx
-            other_x = foot_x[other]
-            # Crossover: LF stepping right of RF, or RF stepping left of LF
-            if (foot_idx == 0 and x > other_x) or (foot_idx == 1 and x < other_x):
-                crossovers += 1
-            foot_x[foot_idx] = x
-            new_facing = 1 if foot_x[1] >= foot_x[0] else -1
-            if new_facing != facing:
-                facing_changes += 1
-                facing = new_facing
-            foot_idx = 1 - foot_idx
-
-        return crossovers, facing_changes
-
-    def _extract_facing_features(self, note_data: NoteData, features: FeatureSet):
-        """Crossover rate and facing-change frequency via foot simulation."""
-        x_pos = self._col_x(note_data)
-
-        # Only track single-column steps; jumps reset foot independence
-        single_xs: List[float] = []
-        for _, pattern in note_data.note_positions:
-            active = [i for i, c in enumerate(pattern) if c in "124" and i < len(x_pos)]
-            if len(active) == 1:
-                single_xs.append(x_pos[active[0]])
-
-        if len(single_xs) < 4:
-            return
-
-        # Try both starting feet; keep the result with fewer crossovers
-        c0, f0 = self._count_crossovers_with_start(single_xs, 0)
-        c1, f1 = self._count_crossovers_with_start(single_xs, 1)
-        crossovers, facing_changes = (c0, f0) if c0 <= c1 else (c1, f1)
-
-        features.crossover_rate = crossovers / len(single_xs)
-        features.facing_changes_per_beat = (
-            facing_changes / features.chart_length_beats
-            if features.chart_length_beats > 0
-            else 0.0
-        )
-
-    # Threshold for "short" interval: 16th note = 1/4 beat.
-    _GALLOP_SHORT = 0.25  # beats (≤ 16th note)
     # A same-column re-tap counts as a "free" repeat gallop if the note
     # sharing that column occurred within this many beats (catches both
     # AB bC and A bB gallop orientations).
     _SAME_COL_WINDOW = 1.0  # beats
 
-    def _extract_rhythm_features(self, note_data: NoteData, features: FeatureSet):
+    # Threshold for "dense" stepping, in real time: ~5.5 steps/second or
+    # faster. Measured in seconds rather than beats so tempo counts: 8th notes
+    # at 220 BPM (0.136 s apart) are a stream, 16ths at 80 BPM (0.19 s) are not.
+    _DENSE_SECONDS = 0.18
+
+    def _extract_rhythm_features(
+        self,
+        note_data: NoteData,
+        features: FeatureSet,
+        steps: List[Tuple[float, str]],
+        step_times: np.ndarray,
+    ):
         """Note interval std, same-column repeat ratio, and stream ratio."""
-        positions = sorted(note_data.note_positions, key=lambda x: x[0])
-        n = len(positions)
+        n = len(steps)
         if n < 2:
             return
 
-        beats = np.array([p[0] for p in positions])
+        beats = np.array([p[0] for p in steps])
         intervals = np.diff(beats)
+        gaps = np.diff(step_times)
         features.note_interval_std = float(intervals.std())
 
         # ------------------------------------------------------------------ #
@@ -443,27 +300,25 @@ class FeatureExtractor:
         #     "A bB"  — B follows b with a longer gap but same column as A   #
         # stream_ratio                                                         #
         #   Note i is a stream interior note if both the preceding AND        #
-        #   following intervals are ≤ _GALLOP_SHORT (16th note) AND the note  #
-        #   does NOT share a column with either neighbor.                     #
+        #   following gaps are ≤ _DENSE_SECONDS AND the note does NOT share   #
+        #   a column with either neighbor.                                    #
         # ------------------------------------------------------------------ #
         same_col_repeat = 0
         stream_interior = 0
 
         for i in range(1, n):
-            gap_before = intervals[i - 1]
-            pat_prev = positions[i - 1][1]
-            pat_curr = positions[i][1]
+            pat_prev = steps[i - 1][1]
+            pat_curr = steps[i][1]
 
             col_overlap = any(a == "1" and b == "1" for a, b in zip(pat_prev, pat_curr))
 
-            if gap_before <= self._SAME_COL_WINDOW and col_overlap:
+            if intervals[i - 1] <= self._SAME_COL_WINDOW and col_overlap:
                 same_col_repeat += 1
                 continue  # don't double-count as stream
 
-            if gap_before <= self._GALLOP_SHORT and i < n - 1:
-                gap_after = intervals[i]
-                if gap_after <= self._GALLOP_SHORT:
-                    pat_next = positions[i + 1][1]
+            if gaps[i - 1] <= self._DENSE_SECONDS and i < n - 1:
+                if gaps[i] <= self._DENSE_SECONDS:
+                    pat_next = steps[i + 1][1]
                     col_overlap_next = any(
                         a == "1" and b == "1" for a, b in zip(pat_curr, pat_next)
                     )
@@ -473,65 +328,45 @@ class FeatureExtractor:
         features.same_col_repeat_ratio = same_col_repeat / n
         features.stream_ratio = stream_interior / n
 
-    # Threshold for "dense" run: 12th note (triplet) speed or faster.
-    # 1/3 beat + small rounding tolerance covers both triplets (0.333) and
-    # 16th notes (0.25) while excluding 8th notes (0.5).
-    _DENSE_THRESHOLD = 1.0 / 3.0 + 0.01  # beats
-
-    def _extract_stamina_features(self, note_data: NoteData, features: FeatureSet):
-        """Longest dense run and stream fraction at 12th-note threshold."""
-        if features.chart_length_seconds <= 0 or features.chart_length_beats <= 0:
+    def _extract_stamina_features(self, features: FeatureSet, step_times: np.ndarray):
+        """Dense-run lengths and sustained step rate."""
+        if features.chart_length_seconds <= 0 or len(step_times) < 4:
             return
 
-        positions = sorted(note_data.note_positions, key=lambda x: x[0])
-        n = len(positions)
-        if n < 4:
+        # Busiest stretch of continuous stepping: step rows per second over
+        # the densest _SUSTAINED_WINDOW, which is what leaves a player winded.
+        counts = np.arange(len(step_times), dtype=float)
+        features.sustained_nps = self._windowed_rate(
+            counts, step_times, self._SUSTAINED_WINDOW
+        )
+
+        # Walk gaps and collect contiguous dense runs as (start, end, rows).
+        gaps = np.diff(step_times)
+        runs = []
+        start = None
+        for i, gap in enumerate(gaps):
+            if gap <= self._DENSE_SECONDS:
+                if start is None:
+                    start = i
+            elif start is not None:
+                runs.append((start, i))
+                start = None
+        if start is not None:
+            runs.append((start, len(gaps)))
+
+        if not runs:
             return
 
-        beats = np.array([p[0] for p in positions])
-        intervals = np.diff(beats)
-
-        # Walk intervals and collect contiguous dense runs.
-        run_beats_list = []
-        run_note_counts = []
-        run_start = None
-        run_end = None
-        run_notes = 0
-
-        for i, iv in enumerate(intervals):
-            if iv <= self._DENSE_THRESHOLD:
-                if run_start is None:
-                    run_start = beats[i]
-                    run_notes = 2  # first and second note
-                else:
-                    run_notes += 1
-                run_end = beats[i + 1]
-            else:
-                if run_start is not None:
-                    run_beats_list.append(run_end - run_start)
-                    run_note_counts.append(run_notes)
-                    run_start = None
-                    run_end = None
-                    run_notes = 0
-        if run_start is not None:
-            run_beats_list.append(run_end - run_start)
-            run_note_counts.append(run_notes)
-
-        if not run_beats_list:
-            return
-
-        # Convert beats → seconds using the chart-wide average (handles BPM changes).
-        beats_per_second = features.chart_length_beats / features.chart_length_seconds
-        run_seconds = [b / beats_per_second for b in run_beats_list]
+        run_seconds = [step_times[end] - step_times[begin] for begin, end in runs]
+        run_rows = [end - begin + 1 for begin, end in runs]
 
         features.max_run_seconds = float(max(run_seconds))
         total_stream_seconds = float(sum(run_seconds))
         features.stream_fraction = total_stream_seconds / features.chart_length_seconds
 
         # Notes per second specifically during dense-run sections.
-        total_stream_notes = sum(run_note_counts)
         if total_stream_seconds > 0:
-            features.stream_nps = total_stream_notes / total_stream_seconds
+            features.stream_nps = sum(run_rows) / total_stream_seconds
 
     def extract_all_charts(self, chart_data: ChartData) -> Dict[str, FeatureSet]:
         """

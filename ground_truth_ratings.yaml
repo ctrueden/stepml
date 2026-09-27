@@ -5,16 +5,42 @@
 # human-verified difficulty rating on the modern_ddr scale (1–20).
 #
 # Fields:
+#   song        – "Pack/Folder" as in a StepMania course (#SONG:Pack/Folder);
+#                 matches the chart's directory exactly, so use it instead of
+#                 title/pack when the in-file title is Japanese or ambiguous
 #   title       – song title, case-insensitive exact match
 #   pack        – optional pack name substring to disambiguate (case-insensitive)
 #   chart_type  – dance-single | dance-double | dance-couple | dance-solo | all
 #   difficulty  – Beginner | Easy | Medium | Hard | Challenge | all
-#   rating      – true difficulty on the target scale
+#   rating      – true difficulty on the modern_ddr scale
 #   note        – optional free-text explanation (not used by code)
 #
-# The rating is applied to every matched (title × chart_type × difficulty × pack)
-# row in the dataset regardless of which scale file it came from, so keep the
-# value on the modern_ddr 1–20 scale unless you are running a different target.
+# pack_weights scales the training weight of every chart in a pack whose
+# labels are trusted as near-canonical (exact pack directory name match).
+#
+# The rating is applied to every matched row in the dataset regardless of which
+# scale file it came from. When generating an itg or classic_ddr dataset it is
+# converted from modern_ddr to that scale first.
+
+pack_weights:
+
+  - pack: "DDR A"
+    weight: 3.0
+    note: >
+      Modern Konami ratings are highly polished; treat them as close to
+      canonical.
+
+  - pack: "DDR A20"
+    weight: 3.0
+    note: >
+      Modern Konami ratings are highly polished; treat them as close to
+      canonical.
+
+  - pack: "DDR A3"
+    weight: 3.0
+    note: >
+      Modern Konami ratings are highly polished; treat them as close to
+      canonical.
 
 overrides:
 
@@ -64,6 +90,55 @@ overrides:
     rating: 11.0
     note: >
       97.90% FC on double; calc is already 11.0 so this is a confirming anchor.
+
+  - song: "ITG 3/Sundance"
+    chart_type: "dance-double"
+    difficulty: "Hard"
+    rating: 10.0
+    note: Plays like a 10; ITG 7 → 11 overstates it.
+
+  - song: "DDR 2014/Squeeze"
+    chart_type: "dance-double"
+    difficulty: "Medium"
+    rating: 11.25
+    note: Plays like 11.0–11.5, above its official 10.
+
+  - song: "DDR A3/Acid,Tribal & Dance (DDR EDITION)"
+    chart_type: "dance-double"
+    difficulty: "Medium"
+    rating: 12.25
+    note: Plays like 12.0–12.5; 8th-note streams at 220 BPM.
+
+  - song: "DDR SuperNOVA2/Feelings Won't Fade(Extend Trance Mix)"
+    chart_type: "dance-double"
+    difficulty: "Hard"
+    rating: 13.0
+    note: Plays like 13+, above its official 12.
+
+  - song: "DDR 2014/Idola"
+    chart_type: "dance-double"
+    difficulty: "Medium"
+    rating: 12.5
+    note: >
+      Harder than Zutto Mitsu Meteite (Ryu Remix) Hard, HIGHS OFF U
+      (Scorccio XY Mix) Hard, and Fleur Medium: faster, with sustained runs
+      across both pads.
+
+  - song: "ITG Rebirth 2 (Beta)/I Justified"
+    chart_type: "dance-double"
+    difficulty: "Medium"
+    rating: 12.0
+    note: >
+      Tricky and fast (triplets at ~160), comparable to BURNING HEAT! (3 Option
+      MIX) double Hard; ITG 6 → 10 understates it.
+
+  - song: "ITG Rebirth 2 (Beta)/Abaddon"
+    chart_type: "dance-double"
+    difficulty: "Medium"
+    rating: 13.5
+    note: >
+      Tempo changes and speed like Sakura (DDR EXTREME, modern 13). Left me
+      winded and gripping the bar; ITG 7 → 11 badly understates it.
 
   # --- Single specific corrections ---
 
