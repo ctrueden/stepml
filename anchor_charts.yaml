@@ -160,3 +160,22 @@ anchors:
     difficulty: Medium
     min: 12.0
     max: 12.3
+
+  - song: "ITG 3/King Kong"
+    chart_type: dance-double
+    difficulty: Challenge
+    min: 13.75
+    max: 14.25
+    harder_than:
+      - "DDR EXTREME/DAIKENKAI:Challenge"
+      - "DDR A20/Waiting:Hard"
+    note: >
+      Non-trivial 16th-note runs, held hand plants, tricky interleaved bombs.
+      Possibly harder than Mekkanika double Hard too.
+
+  - song: "DDR EXTREME/DAIKENKAI"
+    chart_type: dance-double
+    difficulty: Challenge
+    min: 13.0
+    max: 13.5
+    note: Hard 13 — 8th-note interleaved jumps, few breaks.

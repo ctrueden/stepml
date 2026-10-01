@@ -140,6 +140,23 @@ overrides:
       Tempo changes and speed like Sakura (DDR EXTREME, modern 13). Left me
       winded and gripping the bar; ITG 7 → 11 badly understates it.
 
+  - song: "ITG 3/King Kong"
+    chart_type: "dance-double"
+    difficulty: "Challenge"
+    rating: 14.0
+    note: >
+      Non-trivial 16th-note runs (not just ABABA), held hand plants, and
+      tricky interleaved bombs. Played harder than DAIKENKAI Challenge and
+      Waiting Hard double, both 13s; calc 12.5-12.7 understates it.
+
+  - song: "DDR EXTREME/DAIKENKAI"
+    chart_type: "dance-double"
+    difficulty: "Challenge"
+    rating: 13.25
+    note: >
+      Hard 13: lots of 8th-note interleaved jumps and few breaks. The
+      official 13 is right as an integer, but it sits at the top of the band.
+
   # --- Single specific corrections ---
 
   - title: "La Señorita Virtual"
