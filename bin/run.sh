@@ -8,6 +8,17 @@ fi
 # Define the three normalization scales
 SCALES="itg modern_ddr classic_ddr"
 
+# Features do not depend on the rating scale, so extract them once.
+echo "========================================="
+echo "Extracting features"
+echo "========================================="
+uv run extract-features
+if [ $? -ne 0 ]; then
+  echo "Error: Feature extraction failed"
+  exit 1
+fi
+echo ""
+
 # Process each scale
 for scale in $SCALES; do
   echo "========================================="

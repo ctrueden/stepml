@@ -367,6 +367,24 @@ class TestRatingNormalizer:
             f"Interpolated value {normalized} out of expected range"
         )
 
+    @pytest.mark.parametrize(
+        "target", [ScaleType.CLASSIC_DDR, ScaleType.MODERN_DDR, ScaleType.ITG]
+    )
+    def test_from_unified_matches_normalize(self, target):
+        """Converting a cached unified rating equals normalizing directly."""
+        unifier = RatingNormalizer(target_scale=ScaleType.MODERN_DDR)
+        normalizer = RatingNormalizer(target_scale=target)
+        for source in ScaleType:
+            for rating in [1, 3, 5.5, 8, 10, 12, 15, 19, 20, 25]:
+                for nps in [None, 3.0, 6.0]:
+                    unified = unifier.normalize(rating, source, notes_per_second=nps)
+                    expected = normalizer.normalize(
+                        rating, source, notes_per_second=nps
+                    )
+                    assert normalizer.from_unified(unified, source) == expected, (
+                        f"{source.value} {rating} (nps={nps}) → {target.value}"
+                    )
+
 
 @pytest.mark.integration
 class TestScaleDetectionIntegration:

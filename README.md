@@ -48,29 +48,47 @@ stepmania/
             └── Stats.xml
 ```
 
-### Step 1: Generate Dataset
+### Step 1: Extract Features
 
-Process all your charts and extract features:
+Process all your charts and extract features (the slow step, ~10 minutes):
+
+```bash
+uv run extract-features
+```
+
+**Options:**
+- `--songs-dir PATH` - Path to Songs directory (default: `../Songs`)
+- `--output-dir PATH` - Output directory (default: `./data/features`)
+- `--stats-file PATH` - Path to Stats.xml for performance enrichment
+- `--no-performance` - Disable performance data enrichment
+- `--verbose` - Show progress for every file
+
+**Output:**
+- `data/features/features.parquet` - Feature cache, independent of rating scale
+- `data/features/generation_stats.json` - Statistics about the extraction process
+
+Re-run this only when charts or feature code change. Label changes
+(ground truth overrides, DDRFreak ratings) need only Step 2.
+
+### Step 2: Generate Dataset
+
+Label the feature cache for one rating scale (takes seconds):
 
 ```bash
 uv run generate-dataset
 ```
 
 **Options:**
-- `--songs-dir PATH` - Path to Songs directory (default: `../Songs`)
+- `--features PATH` - Feature cache (default: `./data/features/features.parquet`)
 - `--output-dir PATH` - Output directory (default: `./data/processed`)
-- `--stats-file PATH` - Path to Stats.xml for performance enrichment
-- `--no-performance` - Disable performance data enrichment
 - `--normalization-scale {classic_ddr,modern_ddr,itg}` - Target rating scale (default: `modern_ddr`)
   - `classic_ddr`: 1-10 scale (DDR 1st through Extreme)
   - `modern_ddr`: 1-20 scale (DDR X onwards) - **recommended**
   - `itg`: 1-12 scale (In The Groove)
-- `--verbose` - Show progress for every file
 
 **Output:**
 - `data/processed/dataset.csv` - Full dataset in CSV format
 - `data/processed/dataset.parquet` - Full dataset in Parquet format (more efficient)
-- `data/processed/generation_stats.json` - Statistics about the generation process
 
 **Example with custom scale:**
 ```bash
@@ -80,7 +98,7 @@ uv run generate-dataset --normalization-scale itg
 
 **Note:** The normalization scale affects the target rating values in the dataset. If you change the scale, you'll need to retrain your models since the target value range changes (Classic DDR: 1-10, Modern DDR: 1-20, ITG: 1-12).
 
-### Step 2: Train ML Models
+### Step 3: Train ML Models
 
 Train regression models on the extracted features:
 
@@ -99,7 +117,7 @@ uv run train-models
 - `data/models/model_comparison.csv` - Performance comparison of all models
 - `data/models/training_report.txt` - Detailed training report
 
-### Step 3: Generate Calculated Ratings
+### Step 4: Generate Calculated Ratings
 
 Use the trained model to predict ratings for all charts:
 
@@ -129,7 +147,7 @@ uv run generate-ratings
 }
 ```
 
-### Step 4: Use the Ratings
+### Step 5: Use the Ratings
 
 Copy `calculated_ratings.json` to your StepMania/itgmania `Data` folder:
 
@@ -171,7 +189,8 @@ Full list of available commands:
 | Command                    | Purpose                                |
 |----------------------------|----------------------------------------|
 | uv run generate-baseline   | Regenerate regression test baseline    |
-| uv run generate-dataset    | Process charts and create ML dataset   |
+| uv run extract-features    | Extract chart features (feature cache) |
+| uv run generate-dataset    | Label features to create ML dataset    |
 | uv run generate-ratings    | Generate calculated difficulty ratings |
 | uv run generate-playlists  | Create StepMania course playlists      |
 | uv run train-models        | Train ML models on dataset             |

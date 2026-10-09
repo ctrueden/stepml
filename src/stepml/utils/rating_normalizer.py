@@ -131,12 +131,31 @@ class RatingNormalizer:
             unified_rating = float(rating)
 
         # Step 2: Convert from unified scale to target scale (if different)
+        return self.from_unified(unified_rating, source_scale)
+
+    def from_unified(self, unified_rating: float, source_scale: ScaleType) -> float:
+        """
+        Convert a unified (Modern DDR 1-20) rating to the target scale.
+
+        This is the second half of normalize(): a chart's unified rating can be
+        computed once and then converted to each target scale without
+        re-parsing. Ratings of unknown source scale were never unified, so they
+        pass through unchanged, exactly as normalize() returns them.
+
+        Args:
+            unified_rating: Rating as normalize() returns it for MODERN_DDR
+            source_scale: The scale type of the original rating
+
+        Returns:
+            Normalized rating on the target scale
+        """
+        if source_scale not in self.conversion_tables:
+            return float(unified_rating)
         if self.target_scale == ScaleType.MODERN_DDR:
             # Already in target scale
             return unified_rating
-        else:
-            # Convert unified → target scale
-            return float(self.denormalize(unified_rating, self.target_scale))
+        # Convert unified → target scale
+        return float(self.denormalize(unified_rating, self.target_scale))
 
     def _refine_classic_10(
         self, notes_per_second: float, total_notes: Optional[int] = None

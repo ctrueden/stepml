@@ -30,6 +30,7 @@ dev = [
 
 [project.scripts]
 generate-baseline = "stepml.generate_baseline:generate_baseline"
+extract-features = "stepml.extract_features:main"
 generate-dataset = "stepml.generate_dataset:main"
 generate-ratings = "stepml.generate_calculated_ratings:main"
 generate-playlists = "stepml.generate_playlists:main"
