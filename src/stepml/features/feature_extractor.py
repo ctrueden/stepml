@@ -74,6 +74,9 @@ class FeatureExtractor:
         # Extract footwork / weight-shift features
         self._extract_footwork_features(note_data, features, steps, step_times)
 
+        # Extract stepping-while-holding features
+        self._extract_hold_step_features(note_data, features, steps)
+
         # Extract rhythm variability features
         self._extract_rhythm_features(note_data, features, steps, step_times)
 
@@ -250,6 +253,41 @@ class FeatureExtractor:
         crossed = path.crossed
         entered = int(crossed[0]) + int(np.sum(crossed[1:] & ~crossed[:-1]))
         features.crossovers_per_second = entered / duration
+
+    def _extract_hold_step_features(
+        self,
+        note_data: NoteData,
+        features: FeatureSet,
+        steps: List[Tuple[float, str]],
+    ):
+        """Steps taken with the other foot while a hold or roll is held."""
+        dist = footwork.panel_distances(note_data.chart_type)
+        if dist is None or not steps or not note_data.hold_spans:
+            return
+        n_cols = len(dist)
+        beats = np.array([beat for beat, _ in steps])
+        stepped = np.array(
+            [[c in "124" for c in pattern[:n_cols]] for _, pattern in steps]
+        )
+        # Farthest reach from a held panel to a panel stepped on, per row;
+        # -1 where nothing is stepped during a hold. A row on a hold's head or
+        # tail beat does not count: that is a jump onto, or off of, the hold.
+        reach = np.full(len(steps), -1.0)
+        for col, head, tail in note_data.hold_spans:
+            if col >= n_cols:
+                continue
+            i0 = np.searchsorted(beats, head, side="right")
+            i1 = np.searchsorted(beats, tail, side="left")
+            if i0 >= i1:
+                continue
+            d = dist[col].copy()
+            d[col] = -1.0
+            row_reach = np.where(stepped[i0:i1], d, -1.0).max(axis=1)
+            reach[i0:i1] = np.maximum(reach[i0:i1], row_reach)
+        held = reach >= 0
+        features.hold_step_ratio = float(held.mean())
+        if held.any():
+            features.hold_step_reach = float(reach[held].mean())
 
     @staticmethod
     def _windowed_rate(cumulative: np.ndarray, times: np.ndarray, window: float):

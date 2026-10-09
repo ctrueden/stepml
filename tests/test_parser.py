@@ -7,8 +7,13 @@ timing data, and note information from SM files.
 
 import pytest
 
-from stepml.parsers.sm_parser import parse_sm_file
-from stepml.utils.data_structures import ChartData, ChartType, DifficultyType
+from stepml.parsers.sm_parser import SMParser, parse_sm_file
+from stepml.utils.data_structures import (
+    ChartData,
+    ChartType,
+    DifficultyType,
+    NoteData,
+)
 
 
 @pytest.mark.parser
@@ -213,3 +218,21 @@ class TestParserErrorHandling:
         """Parser should raise appropriate error for invalid paths."""
         with pytest.raises((FileNotFoundError, IOError, ValueError)):
             parse_sm_file("")
+
+
+@pytest.mark.parser
+class TestParserHolds:
+    """Hold and roll spans."""
+
+    def test_hold_spans(self):
+        note_data = NoteData(
+            chart_type=ChartType.SINGLE,
+            difficulty=DifficultyType.HARD,
+            rating=10,
+            raw_notes="",
+        )
+        # Hold on L from beat 0 to 2, roll on R from beat 1 to 3.
+        SMParser()._parse_note_data("2000\n0004\n3000\n0003\n", note_data)
+        assert note_data.hold_spans == [(0, 0.0, 2.0), (3, 1.0, 3.0)]
+        assert note_data.hold_notes == 1
+        assert note_data.roll_notes == 1

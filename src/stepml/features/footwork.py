@@ -9,8 +9,8 @@ weight centre after every step, which is what makes double physically hard:
 on single you stay centred over four arrows, while on double you must keep
 hauling your centre of gravity between pads.
 
-Holds are not modelled (the parsers do not keep hold-tail positions), so a
-held foot may occasionally be simulated as moving.
+Holds are not modelled, so a held foot may occasionally be simulated as
+moving; stepping while holding is measured separately (see FeatureExtractor).
 """
 
 from dataclasses import dataclass
@@ -89,6 +89,16 @@ class FootworkPath:
         return self.left[:, 0] > self.right[:, 0]
 
 
+def panel_distances(chart_type: ChartType) -> Optional[np.ndarray]:
+    """Distance (panel units) between every pair of panels, or None."""
+    if chart_type not in _LAYOUTS:
+        return None
+    panels = np.array(_LAYOUTS[chart_type][0])
+    return np.hypot(
+        panels[:, None, 0] - panels[None, :, 0], panels[:, None, 1] - panels[None, :, 1]
+    )
+
+
 def _stance_penalty(panels: np.ndarray) -> np.ndarray:
     """Penalty for standing with left foot on panel i, right on panel j."""
     xs, ys = panels[:, 0], panels[:, 1]
@@ -119,9 +129,7 @@ def simulate(
     layout, (start_l, start_r) = _LAYOUTS[chart_type]
     panels = np.array(layout)
     n_panels = len(panels)
-    dist = np.hypot(
-        panels[:, None, 0] - panels[None, :, 0], panels[:, None, 1] - panels[None, :, 1]
-    )
+    dist = panel_distances(chart_type)
     stance = _stance_penalty(panels)
 
     # Per row: the panels stepped on, reduced to at most two (hands → extremes).

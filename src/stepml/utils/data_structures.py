@@ -65,6 +65,8 @@ class NoteData:
     note_positions: List[Tuple[float, str]] = field(
         default_factory=list
     )  # (beat, note_pattern)
+    # Holds and rolls as (column, head beat, tail beat). Not tracked for DWI.
+    hold_spans: List[Tuple[int, float, float]] = field(default_factory=list)
 
 
 @dataclass
@@ -201,6 +203,15 @@ class FeatureSet:
     foot_speed_peak: float = 0.0
     # crossovers_per_second: times the simulated feet enter a crossed stance.
     crossovers_per_second: float = 0.0
+
+    # Stepping while holding: steps with the other foot while a hold or roll
+    #   is held, which on double can pin one foot while the other reaches
+    #   across pads.
+    # hold_step_ratio: fraction of step rows taken during a hold.
+    hold_step_ratio: float = 0.0
+    # hold_step_reach: mean distance (panels) from the held panel to the
+    #   farthest panel stepped on, over those rows.
+    hold_step_reach: float = 0.0
 
     # Rhythm variability
     note_interval_std: float = 0.0

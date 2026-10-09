@@ -90,7 +90,9 @@ class TestFootwork:
 
 
 class TestWeightShiftFeatures:
-    def _features(self, chart_type, cols, n_cols, spacing=0.5, bpm=150):
+    def _features(
+        self, chart_type, cols, n_cols, spacing=0.5, bpm=150, hold_spans=()
+    ):
         chart = _chart([(0, bpm)])
         note_data = NoteData(
             chart_type=chart_type,
@@ -100,6 +102,7 @@ class TestWeightShiftFeatures:
             total_notes=len(cols),
             tap_notes=len(cols),
             note_positions=_rows(cols, n_cols, spacing),
+            hold_spans=list(hold_spans),
         )
         chart.charts.append(note_data)
         return FeatureExtractor().extract_features(chart, note_data)
@@ -127,3 +130,18 @@ class TestWeightShiftFeatures:
         slow = self._features(ChartType.SINGLE, [0, 2, 1, 3] * 16, 4, bpm=100)
         assert fast.max_run_seconds > 0
         assert slow.max_run_seconds == 0
+
+    def test_steps_during_hold(self):
+        # Hold left pad's L (col 0) from beat 0 to 4; meanwhile step on the
+        # right pad's R (col 7, 5 panels away) at beats 1-3, then step freely.
+        cols = [0, 7, 7, 7, 3, 4, 3, 4]
+        f = self._features(
+            ChartType.DOUBLE, cols, 8, spacing=1.0, hold_spans=[(0, 0.0, 4.0)]
+        )
+        assert f.hold_step_ratio == pytest.approx(3 / 8)
+        assert f.hold_step_reach == pytest.approx(5.0)
+
+    def test_no_holds(self):
+        f = self._features(ChartType.DOUBLE, [0, 7] * 8, 8)
+        assert f.hold_step_ratio == 0
+        assert f.hold_step_reach == 0

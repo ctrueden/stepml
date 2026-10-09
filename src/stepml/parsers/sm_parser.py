@@ -313,6 +313,8 @@ class SMParser:
         else:  # DOUBLE and COUPLE
             columns = 8
 
+        open_holds = {}  # column -> head beat
+
         for measure_idx, measure in enumerate(measures):
             # Remove whitespace and get note lines
             lines = [
@@ -342,16 +344,23 @@ class SMParser:
                 roll_count = 0
                 mine_count = 0
 
-                for char in line[:columns]:
+                for col, char in enumerate(line[:columns]):
                     if char == "1":
                         tap_count += 1
                         note_data.tap_notes += 1
                     elif char == "2":
                         hold_count += 1
                         note_data.hold_notes += 1
+                        open_holds[col] = beat
                     elif char == "4":
                         roll_count += 1
                         note_data.roll_notes += 1
+                        open_holds[col] = beat
+                    elif char == "3":
+                        if col in open_holds:
+                            note_data.hold_spans.append(
+                                (col, open_holds.pop(col), beat)
+                            )
                     elif char == "M":
                         mine_count += 1
                         note_data.mine_notes += 1
