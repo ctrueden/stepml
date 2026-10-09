@@ -186,3 +186,12 @@ anchors:
     min: 12.75
     max: 13.25
     note: Tricky fast back-and-forth across both pads.
+
+  - song: "ITG Rebirth 2 (Beta)/Faster Than"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 10.0
+    max: 11.5
+    note: >
+      Mostly quarter notes; one long 8th-note run near the end with easy,
+      repetitive patterns (ABABCDCDEFEF). 97% with 4 greats on first play.
