@@ -58,7 +58,6 @@ class BaselineModel:
         self.trained = False
         self.train_score = None
         self.test_score = None
-        self.cv_scores = None
 
     def load_dataset(
         self, dataset_path: Path, feature_columns: Optional[List[str]] = None
@@ -234,42 +233,62 @@ class BaselineModel:
 
         return X_train_scaled, X_test_scaled, y_train.values, y_test.values
 
-    def train(self, X_train: np.ndarray, y_train: np.ndarray, cv_folds: int = 5):
+    def _fit_params(self, y_train: np.ndarray) -> Dict:
+        """Sample weights for fitting on the split prepare_data produced."""
+        weight = self.train_weight
+        if weight is None or len(weight) != len(y_train):
+            return {}  # not the split prepare_data produced
+        return {"sample_weight": weight}
+
+    def train(self, X_train: np.ndarray, y_train: np.ndarray):
         """
         Train the model.
 
         Args:
             X_train: Training features
             y_train: Training targets
-            cv_folds: Number of cross-validation folds
         """
         if self.model is None:
             raise ValueError("Model not initialized!")
 
         logger.info(f"\nTraining {self.model_name}...")
-
-        # Train model
-        weight = self.train_weight
-        if weight is not None and len(weight) != len(y_train):
-            weight = None  # not the split prepare_data produced
-        fit_params = {} if weight is None else {"sample_weight": weight}
-        self.model.fit(X_train, y_train, **fit_params)
+        self.model.fit(X_train, y_train, **self._fit_params(y_train))
 
         # Training score
         self.train_score = self.model.score(X_train, y_train)
         logger.info(f"  Training R² score: {self.train_score:.4f}")
 
-        # Cross-validation
-        logger.info(f"  Running {cv_folds}-fold cross-validation...")
-        self.cv_scores = cross_val_score(
-            self.model, X_train, y_train, cv=cv_folds, scoring="r2", params=fit_params
-        )
-        logger.info(f"  CV R² scores: {self.cv_scores}")
-        logger.info(
-            f"  Mean CV R² score: {self.cv_scores.mean():.4f} ± {self.cv_scores.std():.4f}"
-        )
-
         self.trained = True
+
+    def cross_validate(
+        self, X_train: np.ndarray, y_train: np.ndarray, cv_folds: int = 5
+    ) -> np.ndarray:
+        """
+        Cross-validate the model's configuration on the training split.
+
+        Diagnostic only: it fits cv_folds fresh copies of the estimator and
+        leaves this model untouched.
+
+        Args:
+            X_train: Training features
+            y_train: Training targets
+            cv_folds: Number of cross-validation folds
+
+        Returns:
+            R² score of each fold
+        """
+        logger.info(f"  Running {cv_folds}-fold cross-validation...")
+        scores = cross_val_score(
+            self.model,
+            X_train,
+            y_train,
+            cv=cv_folds,
+            scoring="r2",
+            params=self._fit_params(y_train),
+        )
+        logger.info(f"  CV R² scores: {scores}")
+        logger.info(f"  Mean CV R² score: {scores.mean():.4f} ± {scores.std():.4f}")
+        return scores
 
     def evaluate(self, X_test: np.ndarray, y_test: np.ndarray) -> Dict:
         """
@@ -419,9 +438,6 @@ class BaselineModel:
             "target_column": self.target_column,
             "train_score": float(self.train_score) if self.train_score else None,
             "test_score": float(self.test_score) if self.test_score else None,
-            "cv_scores": [float(s) for s in self.cv_scores]
-            if self.cv_scores is not None
-            else None,
         }
         metadata_path = save_dir / f"{self.model_name}_metadata.json"
         with open(metadata_path, "w") as f:
@@ -458,9 +474,6 @@ class BaselineModel:
         self.target_column = metadata["target_column"]
         self.train_score = metadata.get("train_score")
         self.test_score = metadata.get("test_score")
-        self.cv_scores = (
-            np.array(metadata["cv_scores"]) if metadata.get("cv_scores") else None
-        )
         self.trained = True
 
         logger.info(f"Loaded {self.model_name} from {save_dir}")

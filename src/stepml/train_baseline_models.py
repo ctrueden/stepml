@@ -2,10 +2,11 @@
 Training script for baseline ML models.
 
 Trains Linear Regression and Random Forest models on the generated dataset
-and evaluates their performance.
+and evaluates them on a held-out split. Cross-validation and permutation
+importance are slower diagnostics; run diagnose-models for those.
 
 Usage:
-    python train_baseline_models.py [--dataset PATH] [--output-dir PATH]
+    train-models [--dataset PATH] [--output-dir PATH]
 """
 
 import argparse
@@ -46,12 +47,6 @@ def main():
         default=0.2,
         help="Fraction of data for testing (default: 0.2)",
     )
-    parser.add_argument(
-        "--cv-folds",
-        type=int,
-        default=5,
-        help="Number of cross-validation folds (default: 5)",
-    )
 
     args = parser.parse_args()
 
@@ -85,7 +80,7 @@ def main():
             )
 
             # Train model
-            model.train(X_train, y_train, cv_folds=args.cv_folds)
+            model.train(X_train, y_train)
 
             # Evaluate
             metrics = model.evaluate(X_test, y_test)
@@ -101,21 +96,10 @@ def main():
                 feature_importance.to_csv(importance_path, index=False)
                 logger.info(f"\nSaved impurity importance to {importance_path}")
 
-            # Permutation importance: the honest, collinearity-robust measure of
-            # each feature's contribution to held-out accuracy. Reported as the
-            # primary importance.
-            perm_importance = model.get_permutation_importance(X_test, y_test)
-            logger.info("\nTop 10 Features by Permutation Importance:")
-            for rank, (_, row) in enumerate(perm_importance.head(10).iterrows(), 1):
-                logger.info(
-                    f"  {rank}. {row['feature']}: "
-                    f"{row['importance']:.4f} ± {row['importance_std']:.4f}"
-                )
-            perm_path = (
-                args.output_dir / f"{model.model_name}_permutation_importance.csv"
-            )
-            perm_importance.to_csv(perm_path, index=False)
-            logger.info(f"Saved permutation importance to {perm_path}")
+            # Permutation importance from an earlier diagnose-models run
+            # describes the previous model; remove it rather than mislead.
+            stale = args.output_dir / f"{model.model_name}_permutation_importance.csv"
+            stale.unlink(missing_ok=True)
 
             # Save model
             model.save(args.output_dir)

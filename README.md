@@ -108,15 +108,24 @@ uv run train-models
 ```
 
 **What this does:**
-- Trains multiple regression models (Ridge, Random Forest, Gradient Boosting, etc.)
-- Performs cross-validation to evaluate model performance
-- Saves the best-performing model to `data/models/best_model.pkl`
-- Generates performance reports in `data/models/`
+- Trains Linear Regression and Random Forest models (the Random Forest produces the ratings)
+- Evaluates them on a held-out 20% split
 
 **Output:**
-- `data/models/best_model.pkl` - Trained model (pickled)
-- `data/models/model_comparison.csv` - Performance comparison of all models
-- `data/models/training_report.txt` - Detailed training report
+- `data/models/{linear_regression,random_forest}.pkl` - Trained models (pickled), with scalers and metadata
+- `data/models/random_forest_feature_importance.csv` - Impurity-based feature importance
+- `data/models/training_summary.csv` - Held-out MAE, RMSE, R² and Spearman correlation
+
+**Diagnostics:** cross-validation and permutation importance are slower and
+not needed to produce ratings, so they are a separate step, run on demand:
+
+```bash
+uv run diagnose-models --dataset data/modern_ddr/processed/dataset.parquet \
+                       --model-dir data/modern_ddr/models
+```
+
+This writes `*_permutation_importance.csv` and `diagnostics_summary.csv` to
+the model directory.
 
 ### Step 4: Generate Calculated Ratings
 
@@ -195,6 +204,7 @@ Full list of available commands:
 | uv run generate-ratings    | Generate calculated difficulty ratings |
 | uv run generate-playlists  | Create StepMania course playlists      |
 | uv run train-models        | Train ML models on dataset             |
+| uv run diagnose-models     | Cross-validate, permutation importance |
 | uv run sync-favorites      | Sync StepMania favorites lists         |
 | uv run analyze-performance | Analyze performance-enriched dataset   |
 
