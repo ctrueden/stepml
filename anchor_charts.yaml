@@ -195,3 +195,21 @@ anchors:
     note: >
       Mostly quarter notes; one long 8th-note run near the end with easy,
       repetitive patterns (ABABCDCDEFEF). 97% with 4 greats on first play.
+
+  - song: "DDR X3/TRIP MACHINE (xac nanoglide mix)"
+    chart_type: dance-double
+    difficulty: Medium
+    min: 12.0
+    note: Rhythmically tricky, like most TRIP MACHINE charts.
+
+  - song: "DDR X3/Rescue Me"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 12.5
+    max: 13.0
+    harder_than:
+      - "DDR EXTREME/MEMORIES:Hard"
+      - "ITG/Delirium:Medium"
+    note: >
+      Remake of MEMORIES, but nastier: holds under steps with the other foot
+      contort the body awkwardly across both pads.
