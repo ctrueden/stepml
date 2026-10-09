@@ -477,36 +477,12 @@ class LinearRegressionModel(BaselineModel):
 class RandomForestModel(BaselineModel):
     """Random forest regression model."""
 
-    # Features for which difficulty must be monotonically non-decreasing:
-    # all else equal, more notes, faster tempo, and more lateral/footwork
-    # movement never make a chart easier. Enforcing this stops the forest from
-    # learning physically nonsensical dips (e.g. higher peak_density predicting a
-    # lower rating) from label noise, and guarantees two charts that differ only
-    # by being denser/faster are ordered correctly.
-    MONOTONIC_INCREASING = frozenset(
-        {
-            "notes_per_second",
-            "peak_density",
-            "sustained_nps",
-            "body_speed_mean",
-            "body_speed_peak",
-            "body_speed_sustained",
-            "weight_shifts_per_second",
-            "pad_shifts_per_second",
-            "foot_speed_mean",
-            "foot_speed_peak",
-            "crossovers_per_second",
-            "stream_nps",
-            "stream_fraction",
-            "max_run_seconds",
-        }
-    )
-
     def __init__(
         self,
         n_estimators: int = 300,
         max_depth: Optional[int] = 18,
         min_samples_leaf: int = 5,
+        max_features: float = 0.33,
         random_state: int = 42,
     ):
         super().__init__("random_forest")
@@ -514,30 +490,21 @@ class RandomForestModel(BaselineModel):
         # can memorize single charts, which made the model's response to any one
         # feature jumpy and non-monotonic (e.g. peak_density 1.75 -> 11.5 but
         # 2.0 -> 10.1). Averaging over >=5 charts per leaf smooths that out.
+        #
+        # Note: max_features < 1 makes each split consider a random third of
+        # the features, so trees cannot all split on sustained_nps first and
+        # other features get a say. It also replaces the monotonic constraints
+        # this model used to carry: those bounded every leaf beneath a split on
+        # a constrained feature, flattening interactions so that, with
+        # sustained_nps on top, nothing else could move a prediction (raising
+        # every movement feature to its 99th percentile changed a double chart
+        # by 0.001). Without them test MAE fell ~0.99 -> 0.88 and anchor misses
+        # shrank by two thirds, while denser still means harder on average.
         self.model = RandomForestRegressor(
             n_estimators=n_estimators,
             max_depth=max_depth,
             min_samples_leaf=min_samples_leaf,
+            max_features=max_features,
             random_state=random_state,
             n_jobs=-1,  # Use all CPU cores
         )
-
-    def train(self, X_train: np.ndarray, y_train: np.ndarray, cv_folds: int = 5):
-        """Apply monotonic constraints (in feature order) then train."""
-        # monotonic_cst must align with the feature column order, which is only
-        # known after load_dataset has populated feature_names. StandardScaler
-        # scales each feature by a positive std and centers it, both of which
-        # preserve per-feature ordering, so a +1 constraint stays +1 after
-        # scaling.
-        if self.feature_names is not None:
-            constraints = [
-                1 if name in self.MONOTONIC_INCREASING else 0
-                for name in self.feature_names
-            ]
-            if any(constraints):
-                self.model.set_params(monotonic_cst=constraints)
-                n = sum(constraints)
-                logger.info(
-                    f"  Applied monotonic-increasing constraint to {n} feature(s)"
-                )
-        super().train(X_train, y_train, cv_folds=cv_folds)
