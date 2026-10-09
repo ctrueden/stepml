@@ -50,7 +50,7 @@ stepmania/
 
 ### Step 1: Extract Features
 
-Process all your charts and extract features (the slow step, ~10 minutes):
+Process all your charts and extract features (the slow step, a few minutes):
 
 ```bash
 uv run extract-features
@@ -62,6 +62,7 @@ uv run extract-features
 - `--stats-file PATH` - Path to Stats.xml for performance enrichment
 - `--no-performance` - Disable performance data enrichment
 - `--verbose` - Show progress for every file
+- `-j N`, `--jobs N` - Worker processes (default: one per CPU)
 
 **Output:**
 - `data/features/features.parquet` - Feature cache, independent of rating scale

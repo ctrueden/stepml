@@ -17,11 +17,14 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import sys
 import time
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import yaml
@@ -29,9 +32,8 @@ import yaml
 from stepml.features.feature_extractor import FeatureExtractor
 from stepml.parsers.universal_parser import parse_chart_file
 from stepml.utils import get_data_dir, get_stepml_root
-from stepml.utils.data_structures import ChartData, ScaleType
+from stepml.utils.data_structures import ScaleType
 from stepml.utils.performance_enrichment import PerformanceEnricher
-from stepml.utils.scale_detector import ScaleDetector
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -51,8 +53,6 @@ class FeatureCacheBuilder:
     ):
         self.songs_dir = Path(songs_dir)
         self.output_dir = Path(output_dir)
-        self.feature_extractor = FeatureExtractor()
-        self.scale_detector = ScaleDetector()
 
         # Pack directories to skip entirely (optional)
         self.excluded_packs = set()
@@ -155,33 +155,6 @@ class FeatureCacheBuilder:
         )
         return sorted(chart_files)
 
-    def extract_pack_name(self, file_path: Path) -> str:
-        """Extract the song pack name from file path."""
-        # Assuming structure: .../Songs/PackName/SongName/chart.sm
-        try:
-            parts = file_path.parts
-            songs_idx = parts.index("Songs")
-            if songs_idx + 1 < len(parts):
-                return parts[songs_idx + 1]
-        except (ValueError, IndexError):
-            pass
-        return "Unknown"
-
-    def process_chart_file(self, file_path: Path) -> Optional[ChartData]:
-        """Parse a single chart file."""
-        try:
-            # Note: MODERN_DDR is the unified scale, so normalized ratings come
-            # out unified; generate-dataset converts them per target scale.
-            chart_data = parse_chart_file(str(file_path), ScaleType.MODERN_DDR)
-            self.stats["successful_parses"] += 1
-            return chart_data
-        except Exception as e:
-            self.stats["failed_parses"] += 1
-            error_msg = f"{file_path}: {str(e)}"
-            self.stats["errors"].append(error_msg)
-            logger.error(f"Failed to parse {file_path}: {e}")
-            return None
-
     # Thresholds for data-quality checks
     _WARN_SPARSE_NOTES = 30  # fewer notes than this is suspicious for any rated chart
     _WARN_SPARSE_FOR_RATING = 6  # original_rating >= this with very few notes
@@ -219,83 +192,29 @@ class FeatureCacheBuilder:
                 }
             )
 
-    def extract_chart_features(
-        self, chart_data: ChartData, file_path: Path
-    ) -> List[Dict]:
-        """Extract features from all difficulty levels in a chart."""
-        rows = []
-        pack_name = self.extract_pack_name(file_path)
-        file_format = file_path.suffix.lower()
-
-        for chart in chart_data.charts:
-            try:
-                # Extract features
-                features = self.feature_extractor.extract_features(chart_data, chart)
-                feature_dict = features.to_dict()
-
-                # Get normalized rating for this difficulty
-                # The key format is "{chart_type}_{difficulty}"
-                difficulty_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
-                normalized_rating = chart_data.normalized_ratings.get(
-                    difficulty_key, chart.rating
+    def _add_rows(self, file_path: Path, rows: List[Dict]):
+        """Enrich, quality-check and tally the rows extracted from one file."""
+        for row in rows:
+            # Add performance features if enricher is available
+            if self.performance_enricher:
+                perf_features = self.performance_enricher.get_performance_features(
+                    row["file_path"], row["difficulty"], row["chart_type"]
                 )
+                row.update(perf_features)
 
-                # Build complete row with metadata
-                # NOTE: feature_dict is unpacked first, then we override its normalized_rating
-                # with the correct value from chart_data.normalized_ratings
-                row = {
-                    # All extracted features (includes a default normalized_rating: 0.0)
-                    **feature_dict,
-                    # File metadata (override/add)
-                    "file_path": str(file_path.relative_to(self.songs_dir.parent)),
-                    "pack_name": pack_name,
-                    "file_format": file_format,
-                    # Chart metadata
-                    "title": chart_data.title,
-                    "artist": chart_data.artist,
-                    "genre": chart_data.genre or "",
-                    "credit": chart_data.credit or "",
-                    # Chart-specific info
-                    "chart_type": chart.chart_type.value,
-                    "difficulty": chart.difficulty.value,
-                    "original_rating": chart.rating,
-                    "normalized_rating": normalized_rating,  # Override the 0.0 from feature_dict
-                    "detected_scale": chart_data.detected_scale.value
-                    if chart_data.detected_scale
-                    else "unknown",
-                    "scale_confidence": chart_data.scale_confidence,
-                }
+            self._check_chart_quality(row, file_path)
+            self.dataset_rows.append(row)
 
-                # Add performance features if enricher is available
-                if self.performance_enricher:
-                    perf_features = self.performance_enricher.get_performance_features(
-                        str(file_path.relative_to(self.songs_dir.parent)),
-                        chart.difficulty.value,
-                        chart.chart_type.value,
-                    )
-                    row.update(perf_features)
+            # Update statistics
+            self.stats["total_charts"] += 1
+            self.stats["charts_by_format"][row["file_format"]] += 1
+            self.stats["charts_by_difficulty"][row["difficulty"]] += 1
+            self.stats["charts_by_scale"][row["detected_scale"]] += 1
 
-                self._check_chart_quality(row, file_path)
-                rows.append(row)
-
-                # Update statistics
-                self.stats["total_charts"] += 1
-                self.stats["charts_by_format"][file_format] += 1
-                self.stats["charts_by_difficulty"][chart.difficulty.value] += 1
-                if chart_data.detected_scale:
-                    self.stats["charts_by_scale"][chart_data.detected_scale.value] += 1
-
-            except Exception as e:
-                error_msg = f"{file_path} ({chart.difficulty.value}): {str(e)}"
-                self.stats["errors"].append(error_msg)
-                logger.error(
-                    f"Failed to extract features from {file_path} ({chart.difficulty.value}): {e}"
-                )
-
-        return rows
-
-    def extract(self, verbose: bool = False) -> pd.DataFrame:
-        """Extract features from all chart files."""
+    def extract(
+        self, verbose: bool = False, jobs: Optional[int] = None
+    ) -> pd.DataFrame:
+        """Extract features from all chart files, using `jobs` processes."""
         logger.info("=" * 60)
         logger.info("FEATURE EXTRACTION START")
         logger.info("=" * 60)
@@ -309,22 +228,28 @@ class FeatureCacheBuilder:
             logger.error("No chart files found!")
             return pd.DataFrame()
 
-        # Process each file
-        logger.info("\nProcessing chart files...")
-        for i, file_path in enumerate(chart_files, 1):
-            if verbose or i % 100 == 0:
-                logger.info(f"  [{i}/{len(chart_files)}] {file_path.name}")
+        # Each file is independent, so fan out across processes. map() keeps
+        # results in file order, so the cache is identical however many jobs.
+        jobs = jobs or os.cpu_count() or 1
+        logger.info(f"\nProcessing chart files ({jobs} processes)...")
+        worker = partial(_extract_file, songs_root=self.songs_dir.parent)
+        with ProcessPoolExecutor(max_workers=jobs) as pool:
+            results = pool.map(worker, chart_files, chunksize=8)
+            for i, (file_path, (rows, errors)) in enumerate(
+                zip(chart_files, results), 1
+            ):
+                if verbose or i % 100 == 0:
+                    logger.info(f"  [{i}/{len(chart_files)}] {file_path.name}")
+                for error in errors:
+                    logger.error(error)
+                self.stats["errors"].extend(errors)
+                if rows is None:
+                    self.stats["failed_parses"] += 1
+                    continue
+                self.stats["successful_parses"] += 1
+                self._add_rows(file_path, rows)
 
-            # Parse chart file
-            chart_data = self.process_chart_file(file_path)
-            if chart_data is None:
-                continue
-
-            # Extract features for all difficulties
-            rows = self.extract_chart_features(chart_data, file_path)
-            self.dataset_rows.extend(rows)
-
-        # Create DataFrame; normalized ratings are unified (see process_chart_file).
+        # Create DataFrame; normalized ratings are unified (see _extract_file).
         df = pd.DataFrame(self.dataset_rows)
         df = df.rename(columns={"normalized_rating": "unified_rating"})
 
@@ -482,6 +407,85 @@ class FeatureCacheBuilder:
         logger.info("\n" + "=" * 60)
 
 
+def _pack_name(file_path: Path) -> str:
+    """Extract the song pack name from file path."""
+    # Assuming structure: .../Songs/PackName/SongName/chart.sm
+    try:
+        parts = file_path.parts
+        songs_idx = parts.index("Songs")
+        if songs_idx + 1 < len(parts):
+            return parts[songs_idx + 1]
+    except (ValueError, IndexError):
+        pass
+    return "Unknown"
+
+
+def _extract_file(
+    file_path: Path, songs_root: Path
+) -> Tuple[Optional[List[Dict]], List[str]]:
+    """
+    Parse one chart file and extract features for each of its charts.
+
+    Runs in a worker process, so it touches no shared state.
+
+    Returns:
+        (rows, errors): rows is None if the file failed to parse
+    """
+    errors = []
+    try:
+        # Note: MODERN_DDR is the unified scale, so normalized ratings come
+        # out unified; generate-dataset converts them per target scale.
+        chart_data = parse_chart_file(str(file_path), ScaleType.MODERN_DDR)
+    except Exception as e:
+        return None, [f"Failed to parse {file_path}: {e}"]
+
+    extractor = FeatureExtractor()
+    rows = []
+    for chart in chart_data.charts:
+        try:
+            feature_dict = extractor.extract_features(chart_data, chart).to_dict()
+
+            # Get normalized rating for this difficulty
+            # The key format is "{chart_type}_{difficulty}"
+            difficulty_key = f"{chart.chart_type.value}_{chart.difficulty.value}"
+            normalized_rating = chart_data.normalized_ratings.get(
+                difficulty_key, chart.rating
+            )
+
+            # Build complete row with metadata
+            # NOTE: feature_dict is unpacked first, then we override its normalized_rating
+            # with the correct value from chart_data.normalized_ratings
+            rows.append(
+                {
+                    # All extracted features (includes a default normalized_rating: 0.0)
+                    **feature_dict,
+                    # File metadata (override/add)
+                    "file_path": str(file_path.relative_to(songs_root)),
+                    "pack_name": _pack_name(file_path),
+                    "file_format": file_path.suffix.lower(),
+                    # Chart metadata
+                    "title": chart_data.title,
+                    "artist": chart_data.artist,
+                    "genre": chart_data.genre or "",
+                    "credit": chart_data.credit or "",
+                    # Chart-specific info
+                    "chart_type": chart.chart_type.value,
+                    "difficulty": chart.difficulty.value,
+                    "original_rating": chart.rating,
+                    "normalized_rating": normalized_rating,  # Override the 0.0 from feature_dict
+                    "detected_scale": chart_data.detected_scale.value
+                    if chart_data.detected_scale
+                    else "unknown",
+                    "scale_confidence": chart_data.scale_confidence,
+                }
+            )
+        except Exception as e:
+            errors.append(
+                f"Failed to extract features from {file_path} ({chart.difficulty.value}): {e}"
+            )
+    return rows, errors
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Extract features from a StepMania chart collection"
@@ -525,6 +529,13 @@ def main():
     parser.add_argument(
         "--verbose", action="store_true", help="Show progress for every file"
     )
+    parser.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=None,
+        help="Number of worker processes (default: one per CPU)",
+    )
 
     args = parser.parse_args()
 
@@ -545,7 +556,7 @@ def main():
     builder = FeatureCacheBuilder(
         args.songs_dir, args.output_dir, stats_file, args.exclusions
     )
-    df = builder.extract(verbose=args.verbose)
+    df = builder.extract(verbose=args.verbose, jobs=args.jobs)
 
     if not df.empty:
         builder.save_features(df)
