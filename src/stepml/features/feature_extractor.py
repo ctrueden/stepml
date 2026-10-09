@@ -194,6 +194,9 @@ class FeatureExtractor:
     _PAD_SHIFT_MIN = 2.0
     # Short window for peak lateral effort.
     _BURST_WINDOW = 4.0  # seconds
+    # Window for peak pad-switching rate; longer than _BURST_WINDOW because a
+    # few seconds hold only a handful of switches, too coarse to compare.
+    _SWITCH_WINDOW = 10.0  # seconds
 
     def _extract_footwork_features(
         self,
@@ -225,6 +228,16 @@ class FeatureExtractor:
         features.pad_shifts_per_second = (
             self._count_swings(body, self._PAD_SHIFT_MIN) / duration
         )
+        # The weight centre's lag hides switches made faster than it settles
+        # (e.g. PARANOiA (X-Special) double loses 42% of them), so also count
+        # switches of the feet themselves.
+        switches = np.zeros(len(path.times))
+        switches[self._swing_indices(path.mid_x, self._PAD_SHIFT_MIN)] = 1
+        switches = np.cumsum(switches)
+        features.pad_switches_per_second = float(switches[-1] / duration)
+        features.pad_switches_peak = self._windowed_rate(
+            switches, path.times, self._SWITCH_WINDOW
+        )
         lo, hi = np.percentile(body, [5, 95])
         features.body_lateral_range = float(hi - lo)
 
@@ -244,24 +257,32 @@ class FeatureExtractor:
         ends = np.searchsorted(times, times + window, side="right") - 1
         return float(np.max(cumulative[ends] - cumulative) / window)
 
-    @staticmethod
-    def _count_swings(x: np.ndarray, amplitude: float) -> int:
+    @classmethod
+    def _count_swings(cls, x: np.ndarray, amplitude: float) -> int:
         """Count monotone legs of at least `amplitude` (zigzag with hysteresis)."""
-        swings = 0
+        return len(cls._swing_indices(x, amplitude))
+
+    @staticmethod
+    def _swing_indices(x: np.ndarray, amplitude: float) -> List[int]:
+        """Indices at which each monotone leg of at least `amplitude` registers."""
+        swings = []
         direction = 0
         lo = hi = extreme = x[0]
-        for v in x[1:]:
+        for i in range(1, len(x)):
+            v = x[i]
             if direction == 0:
                 lo, hi = min(lo, v), max(hi, v)
                 if v - lo >= amplitude:
-                    direction, extreme, swings = 1, v, 1
+                    direction, extreme = 1, v
+                    swings.append(i)
                 elif hi - v >= amplitude:
-                    direction, extreme, swings = -1, v, 1
+                    direction, extreme = -1, v
+                    swings.append(i)
             elif direction * (v - extreme) > 0:
                 extreme = v
             elif abs(v - extreme) >= amplitude:
                 direction, extreme = -direction, v
-                swings += 1
+                swings.append(i)
         return swings
 
     # A same-column re-tap counts as a "free" repeat gallop if the note

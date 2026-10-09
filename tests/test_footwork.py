@@ -111,6 +111,16 @@ class TestWeightShiftFeatures:
         assert double.pad_shifts_per_second > 0
         assert double.body_speed_mean > 2 * single.body_speed_mean
 
+    def test_fast_pad_switches_survive_body_lag(self):
+        # Hop between pads every two 16ths at 180 BPM (one switch per 0.17 s):
+        # too fast for the lagged weight centre to follow across, but each
+        # hop still moves the feet a full pad.
+        fast = self._features(
+            ChartType.DOUBLE, [0, 3, 4, 7] * 32, 8, spacing=0.25, bpm=180
+        )
+        assert fast.pad_switches_per_second > 2 * fast.pad_shifts_per_second
+        assert fast.pad_switches_peak >= fast.pad_switches_per_second
+
     def test_stream_threshold_is_tempo_aware(self):
         # 8th notes: a stream at 220 BPM (0.136 s apart), not at 100 (0.3 s).
         fast = self._features(ChartType.SINGLE, [0, 2, 1, 3] * 16, 4, bpm=220)

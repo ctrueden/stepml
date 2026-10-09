@@ -61,9 +61,14 @@ class FootworkPath:
     right: np.ndarray  # (n, 2) panel coordinates of the right foot
 
     @property
+    def mid_x(self) -> np.ndarray:
+        """Lateral midpoint of the feet after each step (unfiltered)."""
+        return (self.left[:, 0] + self.right[:, 0]) / 2.0
+
+    @property
     def body_x(self) -> np.ndarray:
         """Lateral weight centre, low-pass filtered over time."""
-        mid = (self.left[:, 0] + self.right[:, 0]) / 2.0
+        mid = self.mid_x
         alpha = 1.0 - np.exp(-np.diff(self.times, prepend=self.times[0]) / _BODY_LAG)
         body = np.empty_like(mid)
         body[0] = mid[0]

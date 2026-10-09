@@ -188,6 +188,11 @@ class FeatureSet:
     weight_shifts_per_second: float = 0.0
     # pad_shifts_per_second: swings of ≥ 2 panels (across onto the other pad).
     pad_shifts_per_second: float = 0.0
+    # pad_switches_*: like pad_shifts, but swings of the feet's raw midpoint,
+    #   so fast back-and-forth between pads that the lagged weight centre
+    #   smooths away still counts — over the whole chart and the busiest 10 s.
+    pad_switches_per_second: float = 0.0
+    pad_switches_peak: float = 0.0
     # body_lateral_range: 5th–95th percentile span of the weight centre.
     body_lateral_range: float = 0.0
     # foot_speed_*: distance travelled by both feet per second — over the
