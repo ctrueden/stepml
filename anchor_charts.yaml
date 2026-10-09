@@ -179,3 +179,10 @@ anchors:
     min: 13.0
     max: 13.5
     note: Hard 13 — 8th-note interleaved jumps, few breaks.
+
+  - song: "DDR X/PARANOiA(X-Special)"
+    chart_type: dance-double
+    difficulty: Challenge
+    min: 12.75
+    max: 13.25
+    note: Tricky fast back-and-forth across both pads.

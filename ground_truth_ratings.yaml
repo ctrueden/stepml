@@ -157,6 +157,14 @@ overrides:
       Hard 13: lots of 8th-note interleaved jumps and few breaks. The
       official 13 is right as an integer, but it sits at the top of the band.
 
+  - song: "DDR X/PARANOiA(X-Special)"
+    chart_type: "dance-double"
+    difficulty: "Challenge"
+    rating: 13.0
+    note: >
+      Lots of tricky fast back-and-forth across both pads, but plays like a
+      13, not the in-file 14. Calc 12.2 understates it.
+
   # --- Single specific corrections ---
 
   - title: "La Señorita Virtual"
