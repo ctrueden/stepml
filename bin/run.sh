@@ -57,6 +57,7 @@ for scale in $SCALES; do
   mkdir -p "$OUTPUT_DIR"
   uv run generate-ratings \
     --dataset "$PROCESSED_DIR/dataset.parquet" \
+    --scale "$scale" \
     --model-dir "$MODELS_DIR" \
     --output "$OUTPUT_DIR/calculated_ratings.json"
 

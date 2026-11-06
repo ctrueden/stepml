@@ -12,45 +12,22 @@ Usage:
 
 import argparse
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
-import yaml
 
+from stepml.models import crossover_correction
 from stepml.utils import get_data_dir, get_stepml_root
-
-
-def _song_mask(df: pd.DataFrame, song: str) -> pd.Series:
-    # file_path looks like "Songs/<Pack>/<Folder>/<file>.sm".
-    return df["file_path"].str.contains(f"/{song}/", regex=False)
-
-
-def find_chart(
-    df: pd.DataFrame, song: str, chart_type: str, difficulty: str
-) -> Optional[pd.Series]:
-    """Return the dataset row for the given chart, or None if absent."""
-    mask = (
-        _song_mask(df, song)
-        & (df["chart_type"].str.lower() == chart_type.lower())
-        & (df["difficulty"].str.lower() == difficulty.lower())
-    )
-    matches = df[mask]
-    return matches.iloc[0] if len(matches) else None
-
-
-def miss(value: float, lo: Optional[float], hi: Optional[float]) -> float:
-    """Signed distance outside [lo, hi]: negative = too low, positive = too high."""
-    if lo is not None and value < lo:
-        return value - lo
-    if hi is not None and value > hi:
-        return value - hi
-    return 0.0
+from stepml.utils.anchors import find_chart, load_anchors, miss
 
 
 def check_anchors(ratings_path: Path, anchors_path: Path) -> pd.DataFrame:
     df = pd.read_parquet(ratings_path)
-    with open(anchors_path) as f:
-        anchors = (yaml.safe_load(f) or {}).get("anchors", [])
+    anchors = load_anchors(anchors_path)
+    # The crossover correction is fitted to these very anchors, so also
+    # judge each one by a correction fitted without it.
+    loo = {}
+    if "uncorrected_rating" in df.columns:
+        loo = crossover_correction.leave_one_out(df, anchors, df["uncorrected_rating"])
 
     rows = []
     order_violations = []
@@ -72,6 +49,8 @@ def check_anchors(ratings_path: Path, anchors_path: Path) -> pd.DataFrame:
                 "calc": calc,
                 "felt": f"{lo if lo is not None else '':>5}–{hi if hi is not None else '':<5}",
                 "miss": miss(calc, lo, hi),
+                "loo": miss(loo[row.name], lo, hi) if row.name in loo else None,
+                "raw": miss(row["uncorrected_rating"], lo, hi) if loo else None,
             }
         )
         for other in a.get("harder_than", []):
@@ -88,8 +67,12 @@ def check_anchors(ratings_path: Path, anchors_path: Path) -> pd.DataFrame:
                 )
 
     result = pd.DataFrame(rows)
-    with pd.option_context("display.width", 200, "display.precision", 2):
-        print(result.to_string(index=False))
+    with pd.option_context("display.width", 200):
+        print(
+            result.drop(columns="raw").to_string(
+                index=False, float_format=lambda v: f"{v:.2f}", na_rep=""
+            )
+        )
 
     within = int((result["miss"] == 0).sum())
     print(f"\nWithin felt range: {within}/{len(result)}")
@@ -101,6 +84,15 @@ def check_anchors(ratings_path: Path, anchors_path: Path) -> pd.DataFrame:
         print(
             f"Mean |miss| (no override, {len(free)} charts): "
             f"{free['miss'].abs().mean():.3f}"
+        )
+    held_out = result.dropna(subset=["loo"])
+    if len(held_out):
+        print(
+            f"\nLeave-one-out crossover correction ({len(held_out)} doubles):"
+            f" within {int((held_out['loo'] == 0).sum())},"
+            f" mean |miss| {held_out['loo'].abs().mean():.3f}"
+            f" (uncorrected: within {int((held_out['raw'] == 0).sum())},"
+            f" mean |miss| {held_out['raw'].abs().mean():.3f})"
         )
     if order_violations:
         print("\nOrdering violations:")

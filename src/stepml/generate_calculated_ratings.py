@@ -7,11 +7,14 @@ Creates a mapping file that can be used to override StepMania's ratings.
 import argparse
 import json
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 
+from stepml.models import crossover_correction
 from stepml.models.baseline_models import RandomForestModel
-from stepml.utils import get_data_dir
+from stepml.utils import ScaleType, get_data_dir, get_stepml_root
+from stepml.utils.anchors import load_anchors
 
 
 def convert_chart_type_to_stepmania_format(chart_type: str) -> str:
@@ -45,8 +48,19 @@ def convert_chart_type_to_stepmania_format(chart_type: str) -> str:
     return "".join(chars)
 
 
-def generate_ratings(dataset_path: Path, model_dir: Path, output_path: Path):
-    """Generate calculated ratings for all charts."""
+def generate_ratings(
+    dataset_path: Path,
+    model_dir: Path,
+    output_path: Path,
+    scale: ScaleType = ScaleType.MODERN_DDR,
+    anchors_path: Optional[Path] = None,
+):
+    """
+    Generate calculated ratings for all charts.
+
+    If anchors_path is given, double charts get the anchor-fitted crossover
+    correction (see models/crossover_correction.py).
+    """
     print("=" * 80)
     print("GENERATING CALCULATED RATINGS")
     print("=" * 80)
@@ -69,7 +83,27 @@ def generate_ratings(dataset_path: Path, model_dir: Path, output_path: Path):
     # Generate predictions
     print("\nGenerating predictions...")
     predictions = model.model.predict(X_scaled)
+    df["uncorrected_rating"] = predictions
     df["calculated_rating"] = predictions
+
+    if anchors_path is not None:
+        anchors = load_anchors(anchors_path)
+        modern = pd.Series(
+            crossover_correction.to_modern(predictions, scale), index=df.index
+        )
+        correction = crossover_correction.fit(df, anchors, modern)
+        df["calculated_rating"] = correction.apply(df, predictions, scale)
+        shift = (df["calculated_rating"] - predictions)[
+            df["chart_type"] == crossover_correction.CHART_TYPE
+        ]
+        print(
+            f"✓ Crossover correction: beta={correction.beta:.2f} per crossover"
+            f" per step (modern_ddr), reference ratio {correction.reference:.3f}"
+        )
+        print(
+            f"  Double shifts: median |Δ| {shift.abs().median():.2f},"
+            f" range {shift.min():+.2f} to {shift.max():+.2f}"
+        )
 
     # Round to nearest 0.5 for readability
     df["calculated_rating_rounded"] = (df["calculated_rating"] * 2).round() / 2
@@ -234,9 +268,34 @@ def main():
         help="Output path for rating mappings",
     )
 
+    parser.add_argument(
+        "--scale",
+        type=ScaleType,
+        choices=list(ScaleType),
+        default=ScaleType.MODERN_DDR,
+        help="Rating scale the model was trained on (default: modern_ddr)",
+    )
+    parser.add_argument(
+        "--anchors",
+        type=Path,
+        default=get_stepml_root() / "anchor_charts.yaml",
+        help="Anchor charts YAML to fit the crossover correction to",
+    )
+    parser.add_argument(
+        "--no-crossover-correction",
+        action="store_true",
+        help="Do not apply the anchor-fitted crossover correction",
+    )
+
     args = parser.parse_args()
 
-    generate_ratings(args.dataset, args.model_dir, args.output)
+    generate_ratings(
+        args.dataset,
+        args.model_dir,
+        args.output,
+        args.scale,
+        None if args.no_crossover_correction else args.anchors,
+    )
 
     print("\nOutput files:")
     print(f"  JSON mapping: {args.output.parent / 'calculated_ratings.json'}")
