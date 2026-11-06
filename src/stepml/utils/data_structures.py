@@ -203,6 +203,11 @@ class FeatureSet:
     foot_speed_peak: float = 0.0
     # crossovers_per_second: times the simulated feet enter a crossed stance.
     crossovers_per_second: float = 0.0
+    # crossovers_peak: the same, over the busiest 10 s.
+    crossovers_peak: float = 0.0
+    # crossover_ratio: crossovers per step row, independent of tempo and
+    #   density (see models/crossover_correction.py).
+    crossover_ratio: float = 0.0
 
     # Stepping while holding: steps with the other foot while a hold or roll
     #   is held, which on double can pin one foot while the other reaches

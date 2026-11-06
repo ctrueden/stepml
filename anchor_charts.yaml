@@ -213,3 +213,12 @@ anchors:
     note: >
       Remake of MEMORIES, but nastier: holds under steps with the other foot
       contort the body awkwardly across both pads.
+
+  - song: "Jun's DDR 2014/[Crossovers] - Brotherswing"
+    chart_type: dance-double
+    difficulty: Hard
+    min: 12.25
+    max: 12.75
+    note: >
+      Only 132 BPM, but 8th-note streams full of fast crossovers, quick
+      triplet-swung gallops, and tricky holds.

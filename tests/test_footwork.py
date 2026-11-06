@@ -76,6 +76,22 @@ class TestFootwork:
         path = self._simulate(ChartType.SINGLE, [0, 1, 3, 2] * 8, 4)
         assert path.crossed.any()
 
+    def test_eighth_note_sweep_crosses_over(self):
+        # The same sweep in 8ths at 132 BPM (0.23 s apart) is still a
+        # crossover stream, not a string of double-steps.
+        path = self._simulate(ChartType.SINGLE, [0, 1, 3, 2] * 8, 4, 0.5, 132)
+        assert path.crossed.sum() >= 8
+
+    def test_held_foot_stays_put(self):
+        # Hold L (col 0) through beat 3 while D U D U come in 8ths: the
+        # right foot must take them all, double-stepping.
+        rows = _rows([0, 1, 2, 1, 2], 4, spacing=0.5)
+        times = np.array([beat for beat, _ in rows]) * 60.0 / 150
+        path = footwork.simulate(ChartType.SINGLE, rows, times, [(0, 0.0, 3.0)])
+        assert (path.left[:, 0] == 0).all()
+        free = footwork.simulate(ChartType.SINGLE, rows, times)
+        assert (free.left[:, 0] != 0).any()
+
     def test_double_pad_switching_moves_body(self):
         # Alternate between left pad and right pad every two beats.
         left_pad = [0, 3] * 4
@@ -90,9 +106,7 @@ class TestFootwork:
 
 
 class TestWeightShiftFeatures:
-    def _features(
-        self, chart_type, cols, n_cols, spacing=0.5, bpm=150, hold_spans=()
-    ):
+    def _features(self, chart_type, cols, n_cols, spacing=0.5, bpm=150, hold_spans=()):
         chart = _chart([(0, bpm)])
         note_data = NoteData(
             chart_type=chart_type,
@@ -145,3 +159,10 @@ class TestWeightShiftFeatures:
         f = self._features(ChartType.DOUBLE, [0, 7] * 8, 8)
         assert f.hold_step_ratio == 0
         assert f.hold_step_reach == 0
+
+    def test_crossover_features(self):
+        sweep = self._features(ChartType.DOUBLE, [0, 1, 3, 2] * 16, 8, bpm=132)
+        plain = self._features(ChartType.DOUBLE, [0, 2, 1, 3] * 16, 8, bpm=132)
+        assert sweep.crossovers_peak >= sweep.crossovers_per_second > 0
+        assert 0 < sweep.crossover_ratio < 1
+        assert plain.crossover_ratio == 0

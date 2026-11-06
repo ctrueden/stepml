@@ -9,8 +9,8 @@ weight centre after every step, which is what makes double physically hard:
 on single you stay centred over four arrows, while on double you must keep
 hauling your centre of gravity between pads.
 
-Holds are not modelled, so a held foot may occasionally be simulated as
-moving; stepping while holding is measured separately (see FeatureExtractor).
+A foot holding a hold or roll stays on its panel until the hold ends, so
+stepping while holding forces the other foot to do all the work.
 """
 
 from dataclasses import dataclass
@@ -37,12 +37,14 @@ _BIG = 1e9
 
 # Cost weights (panel units of "effort"). Tuned so the simulation crosses over
 # rather than double-stepping in fast streams, but double-steps at slow tempo.
+# Note: at _DOUBLESTEP_SPEED 0.35, 8th-note crossover streams at ~130 BPM
+# (e.g. Brotherswing double Hard) were double-stepped instead of crossed.
 _CROSS_BASE = 1.0  # any crossed stance
 _CROSS_PER_UNIT = 1.0  # plus this per panel of crossing
 _STRETCH_FREE = 2.5  # feet this far apart (euclidean) cost nothing extra
 _STRETCH_PER_UNIT = 2.0
 _DOUBLESTEP_BASE = 0.5
-_DOUBLESTEP_SPEED = 0.35  # × 1/dt (seconds)
+_DOUBLESTEP_SPEED = 1.0  # × 1/dt (seconds)
 _MIN_DT = 0.05
 
 
@@ -111,7 +113,10 @@ def _stance_penalty(panels: np.ndarray) -> np.ndarray:
 
 
 def simulate(
-    chart_type: ChartType, rows: Sequence[Tuple[float, str]], times: np.ndarray
+    chart_type: ChartType,
+    rows: Sequence[Tuple[float, str]],
+    times: np.ndarray,
+    holds: Sequence[Tuple[int, float, float]] = (),
 ) -> Optional[FootworkPath]:
     """
     Choose the cheapest foot assignment for the given step rows.
@@ -120,6 +125,7 @@ def simulate(
         chart_type: Play style (couple and unknown layouts are not simulated)
         rows: (beat, pattern) for rows containing at least one step
         times: Seconds for each row
+        holds: (column, head beat, tail beat) of each hold or roll
 
     Returns:
         FootworkPath, or None if the layout is unsupported or there are no rows
@@ -148,7 +154,8 @@ def simulate(
     prev_t = times[0] - 1.0
 
     idx = np.arange(n_panels)
-    for cols, t in zip(steps, times):
+    holds = [h for h in holds if h[0] < n_panels]
+    for (beat, _), cols, t in zip(rows, steps, times):
         dt = max(t - prev_t, _MIN_DT)
         prev_t = t
         ds = _DOUBLESTEP_BASE + _DOUBLESTEP_SPEED / dt
@@ -186,6 +193,16 @@ def simulate(
                 new[lf, rf, :] = cand[i, j] + stance[lf, rf]
                 bps.append((i, j, best_k[i, j]))
             backptrs.append(tuple(bps))
+
+        # A held panel must stay under a foot. If no stance satisfies every
+        # hold (e.g. both feet holding while a third arrow comes), let go.
+        held = [c for c, head, tail in holds if head < beat < tail]
+        if held:
+            pinned = np.ones((n_panels, n_panels), dtype=bool)
+            for c in held:
+                pinned &= (idx[:, None] == c) | (idx[None, :] == c)
+            if pinned.any() and new[pinned].min() < _BIG:
+                new[~pinned] = _BIG
         dp = new
 
     # Backtrack from the cheapest final stance.

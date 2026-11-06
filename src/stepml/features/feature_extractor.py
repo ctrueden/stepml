@@ -212,7 +212,9 @@ class FeatureExtractor:
         duration = features.chart_length_seconds
         if duration <= 0 or len(steps) < 2:
             return
-        path = footwork.simulate(note_data.chart_type, steps, step_times)
+        path = footwork.simulate(
+            note_data.chart_type, steps, step_times, note_data.hold_spans
+        )
         if path is None:
             return
 
@@ -251,8 +253,12 @@ class FeatureExtractor:
         )
 
         crossed = path.crossed
-        entered = int(crossed[0]) + int(np.sum(crossed[1:] & ~crossed[:-1]))
-        features.crossovers_per_second = entered / duration
+        starts = crossed & ~np.concatenate([[False], crossed[:-1]])
+        features.crossovers_per_second = float(starts.sum() / duration)
+        features.crossovers_peak = self._windowed_rate(
+            np.cumsum(starts), path.times, self._SWITCH_WINDOW
+        )
+        features.crossover_ratio = float(starts.mean())
 
     def _extract_hold_step_features(
         self,
